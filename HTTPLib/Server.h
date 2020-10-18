@@ -15,12 +15,26 @@
 #include <netdb.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <list>
 
 #include "HTTPHandler.h"
 
 using std::thread;
 
 namespace CPPHTTP {
+    class TCPConnection {
+    private:
+        int connection;
+    public:
+        [[nodiscard]] int getConnection() const {
+            return connection;
+        }
+
+        void setConnection(int connectionDescriptor) {
+            this->connection = connectionDescriptor;
+        }
+    };
+
     class Server {
     private:
         // Main file descriptor for listen
@@ -36,6 +50,7 @@ namespace CPPHTTP {
         std::vector<thread> m_threads{};
         // Struct or class that handle incoming request
         CPPHTTP::HTTPHandler *m_http_handler{};
+        std::map<int, TCPConnection> connections{};
 
 
         void initSocketFileDescriptor(unsigned short port, unsigned int backlog) {
@@ -119,18 +134,18 @@ namespace CPPHTTP {
             m_http_handler->handle(epoll_fd, event, listen_fd);
         }
 
-        void acceptConnection(epoll_event &event, int epoll_fd) const {
+        void acceptConnection(epoll_event &event, int epoll_fd) {
             struct sockaddr in_addr{};
             socklen_t inLength = sizeof in_addr;
             char hBuf[NI_MAXHOST], sBuf[NI_MAXSERV];
-            int connection;
+            TCPConnection connection{};
             /* accept()
              * Extract the first connection on the queue of pending connections.
              * Create new socket with the same socket type protocol and address family as the specified socket,
              * and allocate a new file descriptor for that socket.
              */
-            connection = accept(m_listen_fd, &in_addr, &inLength);
-            if (connection < 0) {
+            connection.setConnection(accept(m_listen_fd, &in_addr, &inLength));
+            if (connection.getConnection() < 0) {
                 throw std::runtime_error("accept(..) failed");
             } else {
 
@@ -140,13 +155,21 @@ namespace CPPHTTP {
                 }
 
                 // Set non blocking
-                setNonBlock(connection);
+                setNonBlock(connection.getConnection());
                 event.events = EPOLLIN | EPOLLET | EPOLLHUP;
-                event.data.fd = connection;
+                event.data.fd = connection.getConnection();
 
-                if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connection, &event) < 0)
+                if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connection.getConnection(), &event) < 0)
                     throw std::runtime_error("epoll_ctl(..) failed");
 
+                if (!this->connections.contains(connection.getConnection()))
+                    this->connections.try_emplace(connection.getConnection(), connection);
+//
+//                auto it = connections.begin();
+//                while (it != connections.end()) {
+//                    std::cout << it->first << std::endl;
+//                    it++;
+//                }
             }
         }
 

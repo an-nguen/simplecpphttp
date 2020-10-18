@@ -8,10 +8,15 @@
 #include "config_handler.h"
 #include "PG/DBModel.h"
 #include "PG/PGDb.h"
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
 using json = nlohmann::json;
 
 namespace ph {
+    using namespace rapidjson;
+
     class Phone : DBModel {
     public:
         Phone() = default;
@@ -53,8 +58,35 @@ namespace ph {
             return std::string("phone");
         }
 
-        void to_json(json &j) const {
-            j = json{{"id", this->getId()}, {"model", this->getModel()}, {"brand", this->getBrand()}};
+        [[nodiscard]] Value &to_json() const {
+            Document d;
+            Value obj(kObjectType);
+            auto &allocator = d.GetAllocator();
+            Value v;
+            v.SetInt(this->getId());
+            obj.AddMember("id", v, allocator);
+            v.SetString(this->getModel().c_str(), this->getModel().size(), allocator);
+            obj.AddMember("model", v, allocator);
+            v.SetString(this->getBrand().c_str(), this->getBrand().size(), allocator);
+            obj.AddMember("brand", v, allocator);
+            return obj.Move();
+        }
+
+        void to_json(Document &d) const {
+            if (d.IsArray()) {
+                Value obj(kObjectType);
+                auto &allocator = d.GetAllocator();
+                Value v;
+                v.SetInt(this->getId());
+                obj.AddMember("id", v, allocator);
+                v.SetString(this->getModel().c_str(), this->getModel().size(), allocator);
+                obj.AddMember("model", v, allocator);
+                v.SetString(this->getBrand().c_str(), this->getBrand().size(), allocator);
+                obj.AddMember("brand", v, allocator);
+                d.PushBack(obj, allocator);
+            } else {
+                throw std::runtime_error("rapidjson::Document should be array");
+            }
         }
 
         void from_json(json &j) {
@@ -78,6 +110,12 @@ namespace ph {
 }
 
 int main() {
+    using rapidjson::Document;
+    using rapidjson::StringBuffer;
+    using rapidjson::Writer;
+    using rapidjson::Value;
+    StringBuffer buffer;
+
     // Read config file
     configs::DBConfig config{};
     json jsonConfig;
@@ -90,38 +128,49 @@ int main() {
 
 
     // Create pq pool
-    auto db = std::make_shared<datasource::PGDb>("127.0.0.1", 5432, config.dbName.c_str(),
+    auto db = std::make_shared<datasource::PGDb>("::1", 5432, config.dbName.c_str(),
                                                  config.dbUser.c_str(), config.dbPass.c_str(), 16);
 
     // Launch server
     auto *httpHandler = new CPPHTTP::HTTPHandler(16);
     httpHandler->addResource("/", CPPHTTP::GET, [&](CPPHTTP::Request *req, CPPHTTP::Response *resp) {
-        resp->headers.emplace("Content-Type", "application/json");
 
+        resp->headers.emplace("Content-Type", "application/json");
+        Document d(rapidjson::kArrayType);
+
+        auto &allocator = d.GetAllocator();
         std::vector<ph::Phone> phones;
-        db->select<ph::Phone>("phone", phones);
-        json j_arr;
+        db->Find<ph::Phone>("phone", phones);
+
         for (auto &phone: phones) {
-            json j;
-            phone.to_json(j);
-            j_arr.push_back(j);
+            phone.to_json(d);
         }
-        resp->body = j_arr.dump();
+        buffer.Clear();
+        Writer<StringBuffer> writer(buffer);
+        d.Accept(writer);
+        resp->body = std::string(buffer.GetString());
 
     });
     httpHandler->addResource("/random", CPPHTTP::GET, [&](CPPHTTP::Request *req, CPPHTTP::Response *resp) {
         resp->headers.emplace("Content-Type", "application/json");
-
+        Document d(rapidjson::kObjectType);
+        auto &allocator = d.GetAllocator();
         if (req->method == CPPHTTP::GET) {
             std::random_device r;
             std::default_random_engine e1(r());
             std::uniform_int_distribution<int> uniform_dist(1, 100);
             auto mean = uniform_dist(e1);
-            json j = {{"num", mean}};
-            resp->body = j.dump();
+            buffer.Clear();
+            Writer<StringBuffer> writer(buffer);
+            d.AddMember("num", Value().SetInt(mean), allocator);
+            d.Accept(writer);
+            resp->body = std::string(buffer.GetString());
         } else {
-            json j = {{"error", "method not implemented"}};
-            resp->body.assign(j.dump());
+            buffer.Clear();
+            Writer<StringBuffer> writer(buffer);
+            d.AddMember("error", "method not implemented", allocator);
+            d.Accept(writer);
+            resp->body.assign(std::string(buffer.GetString()));
         }
     });
 

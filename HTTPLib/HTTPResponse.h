@@ -8,7 +8,7 @@
 #include <string>
 #include <sstream>
 #include "HTTP_STATUS.h"
-#include "nlohmann/json.hpp"
+#include "rapidjson/document.h"
 
 namespace CPPHTTP {
     struct Response {
@@ -25,10 +25,6 @@ namespace CPPHTTP {
 
         void write(const std::string &msg) {
             this->body.assign(msg);
-        }
-
-        void writeJSON(nlohmann::json &json) {
-            this->write(json.dump());
         }
 
         std::string toString() {

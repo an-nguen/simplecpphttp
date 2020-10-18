@@ -4,12 +4,20 @@
 #include <unistd.h>
 #include <cstring>
 #include <thread>
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 
 #define BUF_SZ 32000
 
 namespace CPPHTTP {
 
     void HTTPHandler::handle(int epoll_fd, struct epoll_event &event, int conn_fd) {
+        using rapidjson::Document;
+        using rapidjson::kObjectType;
+        using rapidjson::StringBuffer;
+        using rapidjson::Writer;
+        using rapidjson::Value;
+
         bool isDone = false, isShouldClose = false;
         std::string raw{};
         char buffer[BUF_SZ];
@@ -44,7 +52,13 @@ namespace CPPHTTP {
             }
             if (cnt > 0) {
                 HTTP_STATUS res = request->parseRequest(raw);
-                nlohmann::json j;
+
+                Document d(kObjectType);
+                auto &allocator = d.GetAllocator();
+                StringBuffer buffer;
+                Value v;
+                buffer.Clear();
+                Writer<StringBuffer> writer(buffer);
 
                 response->protocol = HTTP_PROTOCOL_ENUM::HTTP_1_1;
                 if (res == OK) {
@@ -62,20 +76,13 @@ namespace CPPHTTP {
                                 handler(request.get(), response.get());
                             }
                         } else {
-                            response->status = HTTP_STATUS::NOT_IMPLEMENTED;
-                            response->headers.emplace(std::pair("", ""));
-                            j = {{"error", HTTP_STATUS_STR.at(NOT_IMPLEMENTED)}};
-                            response->body = j.dump();
+                            setErrorResponse(d, allocator, buffer, writer, response, v, HTTP_STATUS::NOT_IMPLEMENTED);
                         }
                     } else {
-                        response->status = HTTP_STATUS::NOT_FOUND;
-                        j = {{"error", HTTP_STATUS_STR.at(NOT_FOUND)}};
-                        response->body = j.dump();
+                        setErrorResponse(d, allocator, buffer, writer, response, v, HTTP_STATUS::NOT_FOUND);
                     }
                 } else if (res == BAD_REQUEST) {
-                    response->status = HTTP_STATUS::BAD_REQUEST;
-                    j = {{"error", HTTP_STATUS_STR.at(BAD_REQUEST)}};
-                    response->body = j.dump();
+                    setErrorResponse(d, allocator, buffer, writer, response, v, HTTP_STATUS::BAD_REQUEST);
                 }
 
                 response->status_msg = HTTP_PROTOCOL_STR[response->protocol];
@@ -93,9 +100,23 @@ namespace CPPHTTP {
         }
 
         if (isShouldClose) {
-            close(conn_fd);
+           close(conn_fd);
         }
 
+    }
+
+    void HTTPHandler::setErrorResponse(rapidjson::Document &d,
+                                       rapidjson::MemoryPoolAllocator<> &allocator,
+                                       const rapidjson::StringBuffer &buffer,
+                                       rapidjson::Writer<rapidjson::StringBuffer> &writer,
+                                       std::shared_ptr<Response> &response,
+                                       rapidjson::Value &v,
+                                       HTTP_STATUS status) {
+        response->status = status;
+        v.SetString(HTTP_STATUS_STR.at(status), allocator);
+        d.AddMember("error", v, allocator);
+        d.Accept(writer);
+        response->body = std::string(buffer.GetString());
     }
 
     void HTTPHandler::addResource(const std::string& path,

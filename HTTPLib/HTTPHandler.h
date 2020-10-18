@@ -11,6 +11,9 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <sys/epoll.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <memory>
 
 namespace CPPHTTP {
     class HTTPHandler {
@@ -31,6 +34,14 @@ namespace CPPHTTP {
         std::vector<std::function<void(Request *, Response *)>> m_queue_handlers_after{};
         std::map<std::string, Resource> m_resources{};
         unsigned int m_read_size{};
+
+        static void setErrorResponse(rapidjson::Document &d,
+                              rapidjson::MemoryPoolAllocator<> &allocator,
+                              const rapidjson::GenericStringBuffer<rapidjson::UTF8<>> &buffer,
+                              rapidjson::Writer<rapidjson::StringBuffer> &writer,
+                              std::shared_ptr<Response> &response,
+                              rapidjson::Value &v,
+                              HTTP_STATUS status) ;
     };
 }
 

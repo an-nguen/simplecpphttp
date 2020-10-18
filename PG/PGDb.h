@@ -29,6 +29,9 @@ namespace datasource {
     using std::shared_ptr;
     using std::runtime_error;
 
+    template <class T>
+    concept DerivedDBModel = std::is_base_of<DBModel, T>::value;
+
     class PGDb {
     public:
         PGDb(shared_ptr<PGPool> pool, string conditions) : m_pool(std::move(pool)), m_where_conditions(std::move(conditions)) {
@@ -50,8 +53,8 @@ namespace datasource {
             return false;
         }
 
-        template<class T, typename std::enable_if<std::is_base_of<DBModel, T>::value>::type* = nullptr>
-        PGDb * select(const string &table, vector<T> &result) {
+        template<class T> requires DerivedDBModel<T>
+        PGDb * Find(const string &table, vector<T> &result) {
             if (isSQLInjection(table)) {
                 throw runtime_error("sql injection detected!");
             }
@@ -123,10 +126,10 @@ namespace datasource {
             return this;
         }
 
-        template<class T, typename std::enable_if<std::is_base_of<DBModel, T>::value>::type* = nullptr>
+        template<class T> requires DerivedDBModel<T>
         PGDb * first(const string &table, vector<T> &result) {
             this->m_limit = 1;
-            return this->select(table, result);
+            return this->Find(table, result);
         }
 
         PGDb * limit(long long countRows) {
@@ -142,7 +145,7 @@ namespace datasource {
         }
 
         template<class ...Params>
-        PGDb * where(const char * format, Params... args) {
+        PGDb * Where(const char * format, Params... args) {
             constexpr size_t len = sizeof...(Params);
             string fmt(format);
             fmt.erase(std::remove_if(fmt.begin(), fmt.end(), [](int ch) {
@@ -168,17 +171,22 @@ namespace datasource {
             return this;
         }
 
-        PGDb * order(const char *fmt) {
+        PGDb * OrderBy(const char *fmt) {
             this->m_order_conditions.assign(fmt);
             return this;
         }
 
+        PGDb * Limit(unsigned int lim) {
+            this->m_limit = lim;
+            return this;
+        }
 
     private:
         shared_ptr<PGPool> m_pool;
         string m_where_conditions{};
         string m_order_conditions{};
-        long long m_limit = 0;
+
+        unsigned int m_limit = 0;
         vector<string> m_query_param_values{};
     };
 }
