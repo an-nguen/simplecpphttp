@@ -12,6 +12,7 @@ set(SRC_COMMON
         HTTPLib/HTTP_METHOD.h
         HTTPLib/HTTP_STATUS.h
         HTTPLib/HTTP_PROTOCOL.h
+        HTTPLib/AbstractLogger.h
         PG/PGConnection.cpp
         PG/PGConnection.h
         PG/PGPool.cpp
@@ -20,8 +21,7 @@ set(SRC_COMMON
         PG/PGDb.h
         )
 set(SRV_SRC
-        HTTPLib/Server.h
-        )
+        HTTPLib/Server.h HTTPLib/SimpleLogger.cpp HTTPLib/SimpleLogger.h)
 set(CLI_SRC
         HTTPLib/Client.h
         )

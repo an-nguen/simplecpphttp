@@ -73,7 +73,11 @@ namespace CPPHTTP {
                             std::cout << getHTTPMethodStr(request->method) << "  ->  [\"" << request->path << "\"]" << std::endl;
 
                             for (auto &handler: this->m_queue_handlers_after) {
-                                handler(request.get(), response.get());
+                                try {
+                                    handler(request.get(), response.get());
+                                } catch (std::exception &e) {
+                                    std::cerr << e.what() << std::endl;
+                                }
                             }
                         } else {
                             setErrorResponse(d, allocator, buffer, writer, response, v, HTTP_STATUS::NOT_IMPLEMENTED);
@@ -100,7 +104,7 @@ namespace CPPHTTP {
         }
 
         if (isShouldClose) {
-           close(conn_fd);
+            close(conn_fd);
         }
 
     }

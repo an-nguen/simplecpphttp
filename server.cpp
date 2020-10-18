@@ -1,5 +1,6 @@
 #include <string>
 #include <random>
+#include <SimpleLogger.h>
 
 #include "nlohmann/json.hpp"
 #include "HTTPLib/HTTPHandler.h"
@@ -115,6 +116,7 @@ int main() {
     using rapidjson::Writer;
     using rapidjson::Value;
     StringBuffer buffer;
+    SimpleLogger logger;
 
     // Read config file
     configs::DBConfig config{};
@@ -175,7 +177,7 @@ int main() {
     });
 
 
-    CPPHTTP::Server serverSocket(8080, 16386, 16386, 1, httpHandler);
+    CPPHTTP::Server serverSocket(8080, 16386, 16386, 1, httpHandler, logger);
 
     serverSocket.listenAndServe();
     return 0;

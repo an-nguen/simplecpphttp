@@ -18,6 +18,7 @@
 #include <list>
 
 #include "HTTPHandler.h"
+#include "AbstractLogger.h"
 
 using std::thread;
 
@@ -35,6 +36,11 @@ namespace CPPHTTP {
         }
     };
 
+
+    template <class T>
+    concept DerivedAbstractLogger = std::is_base_of<logs::AbstractLogger, T>::value;
+
+    template <class L> requires DerivedAbstractLogger<L>
     class Server {
     private:
         // Main file descriptor for listen
@@ -51,7 +57,7 @@ namespace CPPHTTP {
         // Struct or class that handle incoming request
         CPPHTTP::HTTPHandler *m_http_handler{};
         std::map<int, TCPConnection> connections{};
-
+        L m_logger;
 
         void initSocketFileDescriptor(unsigned short port, unsigned int backlog) {
             int err;
@@ -174,35 +180,39 @@ namespace CPPHTTP {
         }
 
         void eventLoop() {
-            struct epoll_event event{};
-            std::vector<struct epoll_event> events(this->m_max_events_count);
-            int nEvent;
-            // Create epoll instance (file descriptor)
-            auto epoll_fd = createEpollFd(this->m_listen_fd, event);
-            if (epoll_fd < 0 || this->m_listen_fd < 0)
-                throw std::runtime_error("m_epollFd or m_listenFd < 0!\n");
+            try {
+                struct epoll_event event{};
+                std::vector<struct epoll_event> events(this->m_max_events_count);
+                int nEvent;
+                // Create epoll instance (file descriptor)
+                auto epoll_fd = createEpollFd(this->m_listen_fd, event);
+                if (epoll_fd < 0 || this->m_listen_fd < 0)
+                    throw std::runtime_error("m_epollFd or m_listenFd < 0!\n");
 
-            while(true) {
-                nEvent = epoll_wait(epoll_fd, events.data(), m_max_events_count, -1);
-                if (nEvent == -1) {
-                    perror("[PERROR] epoll_wait");
-                    break;
-                }
-                for (int i = 0; i < nEvent; ++i) {
-                    if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) {
-                        close(events[i].data.fd);
-                        continue;
-                    } else if (events[i].data.fd == m_listen_fd) {
-                        // New connection
-                        try {
-                            acceptConnection(event, epoll_fd);
-                        } catch (std::runtime_error &error) {
-                            std::cerr << error.what() << std::endl;
+                while (true) {
+                    nEvent = epoll_wait(epoll_fd, events.data(), m_max_events_count, -1);
+                    if (nEvent == -1) {
+                        perror("[PERROR] epoll_wait");
+                        break;
+                    }
+                    for (int i = 0; i < nEvent; ++i) {
+                        if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) {
+                            close(events[i].data.fd);
+                            continue;
+                        } else if (events[i].data.fd == m_listen_fd) {
+                            // New connection
+                            try {
+                                acceptConnection(event, epoll_fd);
+                            } catch (std::runtime_error &error) {
+                                m_logger.error(error.what());
+                            }
+                        } else {
+                            socketThreadProcess(epoll_fd, event, events[i].data.fd);
                         }
-                    } else {
-                        socketThreadProcess(epoll_fd, event, events[i].data.fd);
                     }
                 }
+            } catch (std::exception &e) {
+                m_logger.error(e.what());
             }
         }
 
@@ -213,11 +223,13 @@ namespace CPPHTTP {
                         unsigned int backlog = 1024,
                         int max_events = 16386,
                         unsigned int thread_count = 32,
-                        auto &httpHandler = std::make_shared<CPPHTTP::HTTPHandler>())
+                        auto &httpHandler = std::make_shared<CPPHTTP::HTTPHandler>(),
+                        L &logger = nullptr)
                 : m_port(port), m_backlog(backlog),
                   m_max_events_count(max_events),
                   m_thread_count(thread_count),
-                  m_http_handler(httpHandler) {
+                  m_http_handler(httpHandler),
+                  m_logger(logger) {
             init();
         }
 
@@ -231,7 +243,9 @@ namespace CPPHTTP {
         ~Server() = default;
 
         void listenAndServe() {
-            std::cout << "[LOG] - [Server]\tReady to listen on port " << m_port << "." << std::endl;
+            std::stringstream s;
+            s << "Ready to listen on port " << m_port << ".\n";
+            m_logger.info(s.str().c_str());
             for (auto &thr: this->m_threads) {
                 thr = thread(&Server::eventLoop, this);
                 thr.join();
