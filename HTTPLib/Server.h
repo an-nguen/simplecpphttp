@@ -73,11 +73,9 @@ namespace CPPHTTP {
             err = getaddrinfo(nullptr, std::to_string(port).c_str(), &hints, &res);
             if (err != 0) {
                 if (err == EAI_SYSTEM)
-                    perror("getaddrinfo");
+                    throw std::runtime_error("getaddrinfo" + std::string(std::strerror(errno)));
                 else
-                    fprintf(stderr, "error in getaddrinfo: %s\n", gai_strerror(err));
-
-                this->m_listen_fd = -1;
+                    throw std::runtime_error("error in getaddrinfo: " + std::string(gai_strerror(err)) + "\n");
             }
             for (auto p = res; p != nullptr; p = p->ai_next) {
                 int opt = 1;
@@ -86,15 +84,15 @@ namespace CPPHTTP {
                  * in namespace (family address) and return file descriptor
                  */
                 if ((this->m_listen_fd = socket(p->ai_family, p->ai_socktype, 0)) < 0)
-                    perror("socket(..)");
+                    throw std::runtime_error("socket(..)" + std::string(std::strerror(errno)));
 
                 /* Set options to file descriptor socket.  */
                 if (setsockopt(this->m_listen_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0)
-                    perror("setsockopt(..)");
+                    throw std::runtime_error("setsockopt(..)" + std::string(std::strerror(errno)));
 
                 /* Attach local address to socket file descriptor with address length. */
                 if (bind(this->m_listen_fd, p->ai_addr, p->ai_addrlen) < 0)
-                    perror("bind(..)");
+                    throw std::runtime_error("bind(..)" + std::string(std::strerror(errno)));
             }
 
             /* Mark a connection-mode socket.
@@ -103,7 +101,7 @@ namespace CPPHTTP {
              * (listen(2))
              */
             if (listen(this->m_listen_fd, backlog) < 0)
-                perror("listen(..)");
+                throw std::runtime_error("listen(..)" + std::string(std::strerror(errno)));
 
             freeaddrinfo(res);
         }
@@ -111,17 +109,14 @@ namespace CPPHTTP {
         static int createEpollFd(int listen_fd, struct epoll_event &event) {
             // Create file descriptor for epoll instance
             auto epoll_fd = epoll_create1(0);
-            if (epoll_fd < 0) {
-                perror("epoll(..)");
-                throw std::runtime_error("failed to create epoll instance");
-            }
+            if (epoll_fd < 0)
+                throw std::runtime_error("failed to create epoll instance" + std::string(std::strerror(errno)));
 
             event.events = EPOLLIN;
             event.data.fd = listen_fd;
-            if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &event) == -1) {
-                perror("epoll ctl: m_listenFd");
-                throw std::runtime_error("failed change instance (epoll_ctl(..))");
-            }
+            if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &event) == -1)
+                throw std::runtime_error("failed change instance (epoll_ctl(..)) " + std::string(std::strerror(errno)));
+
             return epoll_fd;
         }
 
@@ -156,9 +151,8 @@ namespace CPPHTTP {
             } else {
 
                 if (getnameinfo(&in_addr, inLength, hBuf, sizeof hBuf, sBuf, sizeof sBuf,
-                                NI_NUMERICHOST | NI_NUMERICSERV) < 0) {
-                    perror("getnameinfo(..)");
-                }
+                                NI_NUMERICHOST | NI_NUMERICSERV) < 0)
+                    throw std::runtime_error("getnameinfo(..): " + std::string(std::strerror(errno)));
 
                 // Set non blocking
                 setNonBlock(connection.getConnection());
@@ -166,7 +160,7 @@ namespace CPPHTTP {
                 event.data.fd = connection.getConnection();
 
                 if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connection.getConnection(), &event) < 0)
-                    throw std::runtime_error("epoll_ctl(..) failed");
+                    throw std::runtime_error("epoll_ctl(..) failed:" + std::string(std::strerror(errno)));
 
                 if (!this->connections.contains(connection.getConnection()))
                     this->connections.try_emplace(connection.getConnection(), connection);
@@ -191,10 +185,9 @@ namespace CPPHTTP {
 
                 while (true) {
                     nEvent = epoll_wait(epoll_fd, events.data(), m_max_events_count, -1);
-                    if (nEvent == -1) {
-                        perror("[PERROR] epoll_wait");
-                        break;
-                    }
+                    if (nEvent == -1)
+                        throw std::runtime_error("epoll_wait(...): " + std::string(std::strerror(errno)));
+
                     for (int i = 0; i < nEvent; ++i) {
                         if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) {
                             close(events[i].data.fd);
@@ -213,6 +206,7 @@ namespace CPPHTTP {
                 }
             } catch (std::exception &e) {
                 m_logger.error(e.what());
+                eventLoop();
             }
         }
 
@@ -234,8 +228,12 @@ namespace CPPHTTP {
         }
 
         void init() {
-            initSocketFileDescriptor(this->m_port, this->m_backlog);
-
+            try {
+                initSocketFileDescriptor(this->m_port, this->m_backlog);
+            } catch (std::exception &e) {
+                m_logger.fatal(e.what());
+                throw;
+            }
             setNonBlock(m_listen_fd);
             this->m_threads.resize(m_thread_count);
         }

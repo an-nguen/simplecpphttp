@@ -130,8 +130,8 @@ int main() {
 
 
     // Create pq pool
-    auto db = std::make_shared<datasource::PGDb>("::1", 5432, config.dbName.c_str(),
-                                                 config.dbUser.c_str(), config.dbPass.c_str(), 16);
+    datasource::PGDb db("::1", 5432, config.dbName.c_str(),
+                        config.dbUser.c_str(), config.dbPass.c_str(), 16);
 
     // Launch server
     auto *httpHandler = new CPPHTTP::HTTPHandler(16);
@@ -142,7 +142,7 @@ int main() {
 
         auto &allocator = d.GetAllocator();
         std::vector<ph::Phone> phones;
-        db->Find<ph::Phone>("phone", phones);
+        db.Find<ph::Phone>("phone", phones);
 
         for (auto &phone: phones) {
             phone.to_json(d);
