@@ -32,13 +32,14 @@ namespace datasource {
     template <class T>
     concept DerivedDBModel = std::is_base_of<DBModel, T>::value;
 
+    template <class L> requires logs::DerivedAbstractLogger<L>
     class PGDb {
     public:
-        PGDb(shared_ptr<PGPool> pool, string conditions) : m_pool(std::move(pool)), m_where_conditions(std::move(conditions)) {
+        PGDb(shared_ptr<PGPool<L>> pool, string conditions) : m_pool(std::move(pool)), m_where_conditions(std::move(conditions)) {
         }
         PGDb(const char * dbHost, int port, const char * dbName, const char * dbUser,
-             const char * dbPass, int poolSize) {
-            this->m_pool = std::make_shared<PGPool>(dbHost, port, dbName, dbUser, dbPass, poolSize);
+             const char * dbPass, int poolSize, L logger) {
+            this->m_pool = std::make_shared<PGPool<L>>(dbHost, port, dbName, dbUser, dbPass, poolSize, logger);
         }
 
         static bool isSQLInjection(const string &param) {
@@ -182,7 +183,7 @@ namespace datasource {
         }
 
     private:
-        shared_ptr<PGPool> m_pool;
+        shared_ptr<PGPool<L>> m_pool;
         string m_where_conditions{};
         string m_order_conditions{};
 

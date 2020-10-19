@@ -1,6 +1,6 @@
 #include <string>
 #include <random>
-#include <SimpleLogger.h>
+#include "Logger/SimpleLogger.h"
 
 #include "nlohmann/json.hpp"
 #include "HTTPLib/HTTPHandler.h"
@@ -131,11 +131,11 @@ int main() {
 
     // Create pq pool
     datasource::PGDb db("::1", 5432, config.dbName.c_str(),
-                        config.dbUser.c_str(), config.dbPass.c_str(), 16);
+                        config.dbUser.c_str(), config.dbPass.c_str(), 16, logger);
 
     // Launch server
-    auto *httpHandler = new CPPHTTP::HTTPHandler(16);
-    httpHandler->addResource("/", CPPHTTP::GET, [&](CPPHTTP::Request *req, CPPHTTP::Response *resp) {
+    CPPHTTP::HTTPHandler httpHandler(16);
+    httpHandler.addResource("/", CPPHTTP::GET, [&](CPPHTTP::Request *req, CPPHTTP::Response *resp) {
 
         resp->headers.emplace("Content-Type", "application/json");
         Document d(rapidjson::kArrayType);
@@ -153,7 +153,7 @@ int main() {
         resp->body = std::string(buffer.GetString());
 
     });
-    httpHandler->addResource("/random", CPPHTTP::GET, [&](CPPHTTP::Request *req, CPPHTTP::Response *resp) {
+    httpHandler.addResource("/random", CPPHTTP::GET, [&](CPPHTTP::Request *req, CPPHTTP::Response *resp) {
         resp->headers.emplace("Content-Type", "application/json");
         Document d(rapidjson::kObjectType);
         auto &allocator = d.GetAllocator();

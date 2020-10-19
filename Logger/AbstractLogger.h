@@ -22,6 +22,9 @@ namespace logs {
         virtual void fatal(const char *msg) = 0;
     };
 
+    template <class T>
+    concept DerivedAbstractLogger = std::is_base_of<logs::AbstractLogger, T>::value;
+
 }
 
 

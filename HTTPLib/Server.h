@@ -18,7 +18,7 @@
 #include <list>
 
 #include "HTTPHandler.h"
-#include "AbstractLogger.h"
+#include "../Logger/AbstractLogger.h"
 
 using std::thread;
 
@@ -36,11 +36,7 @@ namespace CPPHTTP {
         }
     };
 
-
-    template <class T>
-    concept DerivedAbstractLogger = std::is_base_of<logs::AbstractLogger, T>::value;
-
-    template <class L> requires DerivedAbstractLogger<L>
+    template <class L> requires logs::DerivedAbstractLogger<L>
     class Server {
     private:
         // Main file descriptor for listen
@@ -55,7 +51,7 @@ namespace CPPHTTP {
         // Threads
         std::vector<thread> m_threads{};
         // Struct or class that handle incoming request
-        CPPHTTP::HTTPHandler *m_http_handler{};
+        CPPHTTP::HTTPHandler m_http_handler{};
         std::map<int, TCPConnection> connections{};
         L m_logger;
 
@@ -132,7 +128,7 @@ namespace CPPHTTP {
         }
 
         void socketThreadProcess(int epoll_fd, struct epoll_event &event, int listen_fd) {
-            m_http_handler->handle(epoll_fd, event, listen_fd);
+            m_http_handler.handle(epoll_fd, event, listen_fd);
         }
 
         void acceptConnection(epoll_event &event, int epoll_fd) {
@@ -217,12 +213,12 @@ namespace CPPHTTP {
                         unsigned int backlog = 1024,
                         int max_events = 16386,
                         unsigned int thread_count = 32,
-                        auto &httpHandler = std::make_shared<CPPHTTP::HTTPHandler>(),
+                        CPPHTTP::HTTPHandler httpHandler = {},
                         L &logger = nullptr)
                 : m_port(port), m_backlog(backlog),
                   m_max_events_count(max_events),
                   m_thread_count(thread_count),
-                  m_http_handler(httpHandler),
+                  m_http_handler(std::move(httpHandler)),
                   m_logger(logger) {
             init();
         }
