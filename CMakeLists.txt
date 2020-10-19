@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.16.3)
 project(CPPHTTP)
 SET(CMAKE_CXX_STANDARD 20)
 
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -Wextra -Wconversion -Wunused-parameter")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
+
 set(SRC_COMMON
-        HTTPLib/HTTPHandler.cpp
         HTTPLib/HTTPUtils.cpp
         HTTPLib/HTTPResponse.h
         HTTPLib/HTTPRequest.h

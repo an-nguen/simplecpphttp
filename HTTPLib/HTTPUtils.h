@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 
-namespace CPPHTTP {
+namespace cpphttp {
     class HTTPUtils {
     public:
         static std::vector <std::string> split (const std::string& str, const std::string& divider);

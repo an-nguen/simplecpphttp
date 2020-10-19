@@ -12,19 +12,19 @@
 #include "HTTPResponse.h"
 
 
-namespace CPPHTTP {
-#define SET_FUNC(method, func) this->HTTP_METHOD_STR(method) =
-
+namespace cpphttp {
     struct Resource {
     private:
-        std::array<std::function<void(Request *, Response *)>, 11> m_methods{};
+        std::array<std::function<void(std::shared_ptr<Request> &, std::shared_ptr<Response> &)>, 11> m_methods{};
     public:
         Resource() = default;
-        explicit Resource(HTTP_METHOD httpMethod, const std::function<void(Request *, Response *)> &func) {
+        explicit Resource(HTTP_METHOD httpMethod,
+                          const std::function<void(std::shared_ptr<Request> &, std::shared_ptr<Response> &)>& func) {
             this->addMethod(httpMethod, func);
         }
 
-        void addMethod(HTTP_METHOD httpMethod, const std::function<void(Request *, Response *)> &func) {
+        void addMethod(HTTP_METHOD httpMethod,
+                       const std::function<void(std::shared_ptr<Request> &, std::shared_ptr<Response> &)> func) {
             m_methods.at(httpMethod) = func;
         }
 
@@ -32,7 +32,7 @@ namespace CPPHTTP {
             return this->m_methods.at(httpMethod) != nullptr;
         }
 
-        void call(HTTP_METHOD httpMethod, Request *request, Response *response) {
+        void call(HTTP_METHOD httpMethod, std::shared_ptr<Request> &request, std::shared_ptr<Response> &response) {
             m_methods.at(httpMethod)(request, response);
         }
     };

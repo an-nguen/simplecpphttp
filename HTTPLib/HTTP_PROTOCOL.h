@@ -8,7 +8,7 @@
 #include <cstring>
 #include "HTTP_MACRO.h"
 
-namespace CPPHTTP {
+namespace cpphttp {
 #define HTTP_PROTOCOLS(FUNC) \
                 FUNC(NO_PROTOCOL)\
                 FUNC(HTTP_1_0)\
@@ -27,11 +27,11 @@ namespace CPPHTTP {
     };
 
     static HTTP_PROTOCOL_ENUM getHTTPProtocol(const char * str) {
-        for (int i = 0; i < (sizeof(HTTP_PROTOCOL_STR) / sizeof(HTTP_PROTOCOL_STR[0])); i++)
+        for (unsigned i = 0; i < (sizeof(HTTP_PROTOCOL_STR) / sizeof(HTTP_PROTOCOL_STR[0])); i++)
             if (strstr(str, HTTP_PROTOCOL_STR[i]) != nullptr)
                 return (HTTP_PROTOCOL_ENUM)i;
 
-        return (HTTP_PROTOCOL_ENUM)-1;
+        throw std::runtime_error("no http protocol");
     }
 }
 

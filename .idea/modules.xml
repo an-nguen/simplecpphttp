@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/cpphttp.iml" filepath="$PROJECT_DIR$/.idea/cpphttp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/simplecpphttp.iml" filepath="$PROJECT_DIR$/.idea/simplecpphttp.iml" />
     </modules>
   </component>
 </project>

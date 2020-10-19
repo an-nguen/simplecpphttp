@@ -19,7 +19,7 @@ namespace datasource {
     public:
         PGConnection(std::string dbHost, unsigned short port, std::string dbName, std::string dbUser, std::string dbPass, L logger) :
                 m_dbHost(std::move(dbHost)), m_dbPort(port), m_dbName(std::move(dbName)), m_dbUser(std::move(dbUser)),
-                m_dbPass(std::move(dbPass)) {
+                m_dbPass(std::move(dbPass)), m_logger(logger) {
             establishConnection();
         }
 

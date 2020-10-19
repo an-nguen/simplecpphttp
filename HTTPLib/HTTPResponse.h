@@ -10,14 +10,14 @@
 #include "HTTP_STATUS.h"
 #include "rapidjson/document.h"
 
-namespace CPPHTTP {
+namespace cpphttp {
     struct Response {
         // Status line
         HTTP_PROTOCOL_ENUM protocol;
         HTTP_STATUS status;
         std::string status_msg;
         // Response headers
-        std::map <std::string, std::string> headers;
+        std::map <std::string, std::string> headers{};
         // Response body
         std::string body;
         // Extra members

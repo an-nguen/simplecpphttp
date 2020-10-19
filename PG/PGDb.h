@@ -97,7 +97,6 @@ namespace datasource {
                 Assert(sendResult != 1, "failed to exec statement");
             }
             PGresult *queryRes;
-
             while ( queryRes = PQgetResult(conn) ) {
                 auto nCols = PQnfields(queryRes);
                 auto mRows = PQntuples(queryRes);

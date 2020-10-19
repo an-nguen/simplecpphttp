@@ -5,7 +5,7 @@
 #ifndef CPPHTTP_HTTP_MACRO_H
 #define CPPHTTP_HTTP_MACRO_H
 
-namespace CPPHTTP {
+namespace cpphttp {
 #define GEN_ENUM(val) val ,
 #define GEN_STR(val) #val ,
 }

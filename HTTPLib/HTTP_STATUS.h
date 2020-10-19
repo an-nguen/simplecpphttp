@@ -3,7 +3,7 @@
 
 #include <map>
 
-namespace CPPHTTP {
+namespace cpphttp {
     typedef enum HTTP_STATUS {
         // Informational
         CONTINUE = 100,

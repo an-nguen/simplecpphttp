@@ -57,12 +57,12 @@ namespace datasource {
         }
 
         // Database connection config
-        std::string m_dbHost;
-        int m_port;
-        std::string m_dbName;
-        std::string m_dbUser;
-        std::string m_dbPass;
-        L m_logger;
+        std::string m_dbHost{};
+        unsigned short m_port;
+        std::string m_dbName{};
+        std::string m_dbUser{};
+        std::string m_dbPass{};
+        L m_logger{};
 
         int m_poolSize = 16;
         std::mutex m_mutex;

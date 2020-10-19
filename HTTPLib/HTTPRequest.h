@@ -10,7 +10,7 @@
 #include "HTTP_METHOD.h"
 #include "HTTP_PROTOCOL.h"
 
-namespace CPPHTTP {
+namespace cpphttp {
     constexpr const char HTTP_HEADER_BODY_DIVIDER[] = "\r\n\r\n";
     constexpr const char HTTP_NEW_LINE_CHARACTERS[] = "\r\n";
 
@@ -38,7 +38,7 @@ namespace CPPHTTP {
                 auto reqLine = HTTPUtils::split(headerVec.at(0), " ");
                 if (reqLine.size() != 3)
                     return BAD_REQUEST;
-                this->method = getHTTPMethod(reqLine.at(0).c_str());
+                this->method = getHTTPMethod(reqLine.at(0));
                 if (this->method == NO_METHOD)
                     return METHOD_NOT_ALLOWED;
                 this->path = reqLine.at(1);

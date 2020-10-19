@@ -9,17 +9,17 @@ namespace logs {
 
     class AbstractLogger {
     public:
-        virtual void info(const char *msg) = 0;
+        virtual void info(const std::basic_string<char> msg) = 0;
 
-        virtual void trace(const char *msg) = 0;
+        virtual void trace(const std::basic_string<char> msg) = 0;
 
-        virtual void debug(const char *msg) = 0;
+        virtual void debug(const std::basic_string<char> msg) = 0;
 
-        virtual void warn(const char *msg) = 0;
+        virtual void warn(const std::basic_string<char> msg) = 0;
 
-        virtual void error(const char *msg) = 0;
+        virtual void error(const std::basic_string<char> msg) = 0;
 
-        virtual void fatal(const char *msg) = 0;
+        virtual void fatal(const std::basic_string<char> msg) = 0;
     };
 
     template <class T>

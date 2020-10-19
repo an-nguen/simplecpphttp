@@ -9,17 +9,17 @@
 
 class SimpleLogger : public logs::AbstractLogger {
 public:
-    void info(const char *msg) override;
+    void info(std::basic_string<char> msg) override;
 
-    void trace(const char *msg) override;
+    void trace(std::basic_string<char> msg) override;
 
-    void debug(const char *msg) override;
+    void debug(std::basic_string<char> msg) override;
 
-    void warn(const char *msg) override;
+    void warn(std::basic_string<char> msg) override;
 
-    void error(const char *msg) override;
+    void error(std::basic_string<char> msg) override;
 
-    void fatal(const char *msg) override;
+    void fatal(std::basic_string<char> msg) override;
 };
 
 

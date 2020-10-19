@@ -22,7 +22,7 @@
 
 using std::thread;
 
-namespace CPPHTTP {
+namespace cpphttp {
     class TCPConnection {
     private:
         int connection;
@@ -51,7 +51,7 @@ namespace CPPHTTP {
         // Threads
         std::vector<thread> m_threads{};
         // Struct or class that handle incoming request
-        CPPHTTP::HTTPHandler m_http_handler{};
+        cpphttp::HTTPHandler<L> m_http_handler{};
         std::map<int, TCPConnection> connections{};
         L m_logger;
 
@@ -184,7 +184,7 @@ namespace CPPHTTP {
                     if (nEvent == -1)
                         throw std::runtime_error("epoll_wait(...): " + std::string(std::strerror(errno)));
 
-                    for (int i = 0; i < nEvent; ++i) {
+                    for (unsigned long i = 0; i < nEvent; ++i) {
                         if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) {
                             close(events[i].data.fd);
                             continue;
@@ -213,7 +213,7 @@ namespace CPPHTTP {
                         unsigned int backlog = 1024,
                         int max_events = 16386,
                         unsigned int thread_count = 32,
-                        CPPHTTP::HTTPHandler httpHandler = {},
+                        cpphttp::HTTPHandler<L> httpHandler = {},
                         L &logger = nullptr)
                 : m_port(port), m_backlog(backlog),
                   m_max_events_count(max_events),

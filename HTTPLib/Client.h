@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 #include <resolv.h>
 
-namespace CPPHTTP {
+namespace cpphttp {
     class Client {
     private:
         int m_listenFd{};

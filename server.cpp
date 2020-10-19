@@ -1,17 +1,22 @@
 #include <string>
 #include <random>
-#include "Logger/SimpleLogger.h"
 
-#include "nlohmann/json.hpp"
+#include "config_handler.h"
+
 #include "HTTPLib/HTTPHandler.h"
 #include "HTTPLib/Server.h"
-#include "PG/PGPool.h"
-#include "config_handler.h"
+
+#include "Logger/SimpleLogger.h"
+
 #include "PG/DBModel.h"
 #include "PG/PGDb.h"
+#include "PG/PGPool.h"
+
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+
+#include "nlohmann/json.hpp"
 
 using json = nlohmann::json;
 
@@ -29,7 +34,7 @@ namespace ph {
             return m_id;
         }
 
-        void setId(long long int id) {
+        [[maybe_unused]] void setId(long long int id) {
             this->m_id = id;
         }
 
@@ -37,7 +42,7 @@ namespace ph {
             return m_model;
         }
 
-        void setModel(const std::string &model) {
+        [[maybe_unused]] void setModel(const std::string &model) {
             this->m_model = model;
         }
 
@@ -45,7 +50,7 @@ namespace ph {
             return m_brand;
         }
 
-        void setBrand(const std::string &brand) {
+        [[maybe_unused]] void setBrand(const std::string &brand) {
             this->m_brand = brand;
         }
 
@@ -59,41 +64,21 @@ namespace ph {
             return std::string("phone");
         }
 
-        [[nodiscard]] Value &to_json() const {
-            Document d;
-            Value obj(kObjectType);
-            auto &allocator = d.GetAllocator();
-            Value v;
-            v.SetInt(this->getId());
-            obj.AddMember("id", v, allocator);
-            v.SetString(this->getModel().c_str(), this->getModel().size(), allocator);
-            obj.AddMember("model", v, allocator);
-            v.SetString(this->getBrand().c_str(), this->getBrand().size(), allocator);
-            obj.AddMember("brand", v, allocator);
-            return obj.Move();
-        }
-
-        void to_json(Document &d) const {
+        void toJson(Document &d) const {
             if (d.IsArray()) {
                 Value obj(kObjectType);
                 auto &allocator = d.GetAllocator();
                 Value v;
-                v.SetInt(this->getId());
+                v.SetInt(int(this->getId()));
                 obj.AddMember("id", v, allocator);
-                v.SetString(this->getModel().c_str(), this->getModel().size(), allocator);
+                v.SetString(this->getModel().c_str(), unsigned (this->getModel().size()), allocator);
                 obj.AddMember("model", v, allocator);
-                v.SetString(this->getBrand().c_str(), this->getBrand().size(), allocator);
+                v.SetString(this->getBrand().c_str(), unsigned (this->getBrand().size()), allocator);
                 obj.AddMember("brand", v, allocator);
                 d.PushBack(obj, allocator);
             } else {
                 throw std::runtime_error("rapidjson::Document should be array");
             }
-        }
-
-        void from_json(json &j) {
-            this->setId(j.at("id").get<long long>());
-            this->setModel(j.at("model").get<std::string>());
-            this->setBrand(j.at("brand").get<std::string>());
         }
 
         friend std::ostream &operator<<(std::ostream &os, const Phone &obj) {
@@ -134,18 +119,15 @@ int main() {
                         config.dbUser.c_str(), config.dbPass.c_str(), 16, logger);
 
     // Launch server
-    CPPHTTP::HTTPHandler httpHandler(16);
-    httpHandler.addResource("/", CPPHTTP::GET, [&](CPPHTTP::Request *req, CPPHTTP::Response *resp) {
-
+    cpphttp::HTTPHandler httpHandler(16, logger);
+    httpHandler.addResource("/", cpphttp::GET, [&](std::shared_ptr<cpphttp::Request> &req, std::shared_ptr<cpphttp::Response> &resp) {
         resp->headers.emplace("Content-Type", "application/json");
         Document d(rapidjson::kArrayType);
-
-        auto &allocator = d.GetAllocator();
         std::vector<ph::Phone> phones;
         db.Find<ph::Phone>("phone", phones);
 
         for (auto &phone: phones) {
-            phone.to_json(d);
+            phone.toJson(d);
         }
         buffer.Clear();
         Writer<StringBuffer> writer(buffer);
@@ -153,11 +135,11 @@ int main() {
         resp->body = std::string(buffer.GetString());
 
     });
-    httpHandler.addResource("/random", CPPHTTP::GET, [&](CPPHTTP::Request *req, CPPHTTP::Response *resp) {
+    httpHandler.addResource("/random", cpphttp::GET, [&](std::shared_ptr<cpphttp::Request> &req, std::shared_ptr<cpphttp::Response> &resp) {
         resp->headers.emplace("Content-Type", "application/json");
         Document d(rapidjson::kObjectType);
         auto &allocator = d.GetAllocator();
-        if (req->method == CPPHTTP::GET) {
+        if (req->method == cpphttp::GET) {
             std::random_device r;
             std::default_random_engine e1(r());
             std::uniform_int_distribution<int> uniform_dist(1, 100);
@@ -177,7 +159,7 @@ int main() {
     });
 
 
-    CPPHTTP::Server serverSocket(8080, 16386, 16386, 1, httpHandler, logger);
+    cpphttp::Server serverSocket(8080, 16386, 16386, 1, httpHandler, logger);
 
     serverSocket.listenAndServe();
     return 0;
