@@ -53,6 +53,7 @@ namespace cpphttp {
         // Struct or class that handle incoming request
         cpphttp::HTTPHandler<L> m_http_handler{};
         std::map<int, TCPConnection> connections{};
+        // Logger
         L m_logger;
 
         void initSocketFileDescriptor(unsigned short port, unsigned int backlog) {
@@ -160,12 +161,6 @@ namespace cpphttp {
 
                 if (!this->connections.contains(connection.getConnection()))
                     this->connections.try_emplace(connection.getConnection(), connection);
-//
-//                auto it = connections.begin();
-//                while (it != connections.end()) {
-//                    std::cout << it->first << std::endl;
-//                    it++;
-//                }
             }
         }
 
@@ -180,6 +175,7 @@ namespace cpphttp {
                     throw std::runtime_error("m_epollFd or m_listenFd < 0!\n");
 
                 while (true) {
+                    /* wait for events on epoll_fd */
                     nEvent = epoll_wait(epoll_fd, events.data(), m_max_events_count, -1);
                     if (nEvent == -1)
                         throw std::runtime_error("epoll_wait(...): " + std::string(std::strerror(errno)));
@@ -189,13 +185,10 @@ namespace cpphttp {
                             close(events[i].data.fd);
                             continue;
                         } else if (events[i].data.fd == m_listen_fd) {
-                            // New connection
-                            try {
-                                acceptConnection(event, epoll_fd);
-                            } catch (std::runtime_error &error) {
-                                m_logger.error(error.what());
-                            }
+                            // On new connection
+                            acceptConnection(event, epoll_fd);
                         } else {
+                            // Handle connection
                             socketThreadProcess(epoll_fd, event, events[i].data.fd);
                         }
                     }

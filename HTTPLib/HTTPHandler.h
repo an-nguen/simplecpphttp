@@ -60,6 +60,7 @@ namespace cpphttp {
                 while (!isDone) {
                     ssize_t cnt = 0;
 
+                    /* 1. read data from connection file descriptor to raw */
                     auto nBytes = readConnection(connFd, raw, cnt);
                     if (nBytes == -1) {
                         if (!(errno == EAGAIN || errno == EWOULDBLOCK)) {
@@ -75,10 +76,12 @@ namespace cpphttp {
                             throw runtime_error("epoll_ctl" + std::string(std::strerror(errno)));
                     }
                     if (cnt > 0) {
+                        /* parse/handle acquired data to Response struct instance */
                         response = handleResponse(raw, request, response,
                                                   d, allocator, stringBuffer, writer, v);
                         response->headers.emplace("Server", "cpphttp");
                         response->headers.emplace("Access-Control-Allow-Origin", "*");
+                        /* 3. write data to connection file descriptor */
                         nBytes = writeConnection(connFd, response);
                         if (nBytes == 0 || nBytes == -1) {
                             m_logger.error("failed to write msg");

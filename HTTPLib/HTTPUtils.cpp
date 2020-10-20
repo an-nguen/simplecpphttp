@@ -4,6 +4,7 @@
 
 #include "HTTPUtils.h"
 
+/* Helper function that split string by divider to vector */
 std::vector<std::string> cpphttp::HTTPUtils::split(const std::string& str = "", const std::string& divider = "\n") {
     std::vector <std::string> vecStr {};
     // Make copy of original string

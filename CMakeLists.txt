@@ -14,14 +14,16 @@ set(SRC_COMMON
         HTTPLib/HTTP_METHOD.h
         HTTPLib/HTTP_STATUS.h
         HTTPLib/HTTP_PROTOCOL.h
-        Logger/AbstractLogger.h
         PG/PGConnection.h
         PG/PGPool.h
         PG/DBModel.h
         PG/PGDb.h
+        Logger/AbstractLogger.h
+        Logger/SimpleLogger.cpp
+        Logger/SimpleLogger.h
         )
 set(SRV_SRC
-        HTTPLib/Server.h Logger/SimpleLogger.cpp Logger/SimpleLogger.h)
+        HTTPLib/Server.h )
 set(CLI_SRC
         HTTPLib/Client.h
         )
@@ -44,12 +46,10 @@ ADD_CUSTOM_TARGET(
         COMMENT "Copying Files for target: CPPHTTP" VERBATIM
 )
 
-file( COPY ${CMAKE_CURRENT_SOURCE_DIR}/config.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/HTTPLib)
 target_include_directories(${PROJECT_NAME} PRIVATE ${PostgreSQL_INCLUDE_DIRS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${RapidJSON_INCLUDE_DIRS})
 target_link_libraries (${PROJECT_NAME} nlohmann_json::nlohmann_json)
 target_link_libraries (${PROJECT_NAME} Threads::Threads)
 target_link_libraries (${PROJECT_NAME} ${RapidJSON_LIBRARIES})
-target_link_libraries (${PROJECT_NAME} ZLIB::ZLIB)
 target_link_libraries (${PROJECT_NAME} ${PostgreSQL_LIBRARIES})

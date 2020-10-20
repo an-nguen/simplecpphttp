@@ -11,7 +11,6 @@
 #include "HTTPRequest.h"
 #include "HTTPResponse.h"
 
-
 namespace cpphttp {
     struct Resource {
     private:

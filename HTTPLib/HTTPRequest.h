@@ -28,13 +28,17 @@ namespace cpphttp {
         }
 
         HTTP_STATUS parseRequest(const std::string& raw) {
+            // 1. Find separator of HTTP header and HTTP Body
             auto found = raw.find(HTTP_HEADER_BODY_DIVIDER);
             if (found != std::string::npos) {
+                // 2. Read header to string
                 auto headerStr = raw.substr(0, found + std::strlen(HTTP_HEADER_BODY_DIVIDER));
+                // 3. Read body string
                 auto bodyStr = raw.substr(found + std::strlen(HTTP_HEADER_BODY_DIVIDER),
                                           (raw.length() - (found + std::strlen(HTTP_HEADER_BODY_DIVIDER))));
+                // 4. Split header string to string vector
                 auto headerVec = HTTPUtils::split(headerStr, HTTP_NEW_LINE_CHARACTERS);
-
+                // 5. Parse first HTTP header line
                 auto reqLine = HTTPUtils::split(headerVec.at(0), " ");
                 if (reqLine.size() != 3)
                     return BAD_REQUEST;
@@ -43,13 +47,14 @@ namespace cpphttp {
                     return METHOD_NOT_ALLOWED;
                 this->path = reqLine.at(1);
                 this->protocol = getHTTPProtocol(reqLine.at(2).c_str());
-
+                // 6. The remainder of the header write to std::map this->headers
                 for (auto i = headerVec.begin() + 1; i != headerVec.end() - 1; i++) {
                     auto req_header = HTTPUtils::split(*i, ":");
                     if (req_header.size() == 2)
                         headers.emplace(req_header.at(0), req_header.at(1));
                     
                 }
+                // 7. Write body string to member
                 this->body = bodyStr;
             } else {
                 return BAD_REQUEST;

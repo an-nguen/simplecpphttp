@@ -20,12 +20,6 @@ namespace cpphttp {
         std::map <std::string, std::string> headers{};
         // Response body
         std::string body;
-        // Extra members
-
-
-        void write(const std::string &msg) {
-            this->body.assign(msg);
-        }
 
         std::string toString() {
             std::stringstream ss;

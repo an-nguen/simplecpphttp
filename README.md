@@ -1,2 +1,2 @@
 ## cpphttp
-Simple own http server implementation without SSL
+Simple HTTP server implementation using linux epoll, sockets, STL library.  
