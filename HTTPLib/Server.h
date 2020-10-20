@@ -71,9 +71,9 @@ namespace cpphttp {
             err = getaddrinfo(nullptr, std::to_string(port).c_str(), &hints, &res);
             if (err != 0) {
                 if (err == EAI_SYSTEM)
-                    throw SERVER_EXCEPTION("getaddrinfo" + std::string(std::strerror(errno)));
+                    throw SERVER_EXCEPTION2("getaddrinfo: ", std::string(std::strerror(errno)));
                 else
-                    throw SERVER_EXCEPTION("error in getaddrinfo: " + std::string(gai_strerror(err)) + "\n");
+                    throw SERVER_EXCEPTION2("getaddrinfo: ", std::string(gai_strerror(err)));
             }
             for (auto p = res; p != nullptr; p = p->ai_next) {
                 int opt = 1;
@@ -82,15 +82,15 @@ namespace cpphttp {
                  * in namespace (family address) and return file descriptor
                  */
                 if ((this->m_listen_fd = socket(p->ai_family, p->ai_socktype, 0)) < 0)
-                    throw SERVER_EXCEPTION("socket(..)" + std::string(std::strerror(errno)));
+                    throw SERVER_EXCEPTION2("socket(..): ", std::string(std::strerror(errno)));
 
                 /* Set options to file descriptor socket.  */
                 if (setsockopt(this->m_listen_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0)
-                    throw SERVER_EXCEPTION("setsockopt(..)" + std::string(std::strerror(errno)));
+                    throw SERVER_EXCEPTION2("setsockopt(..): ", std::string(std::strerror(errno)));
 
                 /* Attach local address to socket file descriptor with address length. */
                 if (bind(this->m_listen_fd, p->ai_addr, p->ai_addrlen) < 0)
-                    throw SERVER_EXCEPTION("bind(..)" + std::string(std::strerror(errno)));
+                    throw SERVER_EXCEPTION2("bind(..): ", std::string(std::strerror(errno)));
             }
 
             /* Mark a connection-mode socket.
@@ -99,7 +99,7 @@ namespace cpphttp {
              * (listen(2))
              */
             if (listen(this->m_listen_fd, backlog) < 0)
-                throw SERVER_EXCEPTION("listen(..)" + std::string(std::strerror(errno)));
+                throw SERVER_EXCEPTION2("listen(..): ", std::string(std::strerror(errno)));
 
             freeaddrinfo(res);
         }
@@ -108,12 +108,12 @@ namespace cpphttp {
             // Create file descriptor for epoll instance
             auto epoll_fd = epoll_create1(0);
             if (epoll_fd < 0)
-                throw SERVER_EXCEPTION("failed to create epoll instance" + std::string(std::strerror(errno)));
+                throw SERVER_EXCEPTION2("failed to create epoll instance: ", std::string(std::strerror(errno)));
 
             event.events = EPOLLIN;
             event.data.fd = listen_fd;
             if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &event) == -1)
-                throw SERVER_EXCEPTION("failed change instance (epoll_ctl(..)) " + std::string(std::strerror(errno)));
+                throw SERVER_EXCEPTION2("failed change instance (epoll_ctl(..)): ", std::string(std::strerror(errno)));
 
             return epoll_fd;
         }
@@ -145,12 +145,12 @@ namespace cpphttp {
              */
             connection.setConnection(accept(m_listen_fd, &in_addr, &inLength));
             if (connection.getConnection() < 0) {
-                throw SERVER_EXCEPTION("accept(..) failed: " + std::string(std::strerror(errno)));
+                throw SERVER_EXCEPTION2("accept(..) failed: ", std::string(std::strerror(errno)));
             } else {
 
                 if (getnameinfo(&in_addr, inLength, hBuf, sizeof hBuf, sBuf, sizeof sBuf,
                                 NI_NUMERICHOST | NI_NUMERICSERV) < 0)
-                    throw SERVER_EXCEPTION("getnameinfo(..): " + std::string(std::strerror(errno)));
+                    throw SERVER_EXCEPTION2("getnameinfo(..): ", std::string(std::strerror(errno)));
 
                 // Set non blocking
                 setNonBlock(connection.getConnection());
@@ -158,7 +158,7 @@ namespace cpphttp {
                 event.data.fd = connection.getConnection();
 
                 if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connection.getConnection(), &event) < 0)
-                    throw SERVER_EXCEPTION(std::string("epoll_ctl(..) failed:") + std::strerror(errno));
+                    throw SERVER_EXCEPTION2(std::string("epoll_ctl(..) failed:"), std::strerror(errno));
 
                 if (!this->connections.contains(connection.getConnection()))
                     this->connections.try_emplace(connection.getConnection(), connection);
@@ -179,7 +179,7 @@ namespace cpphttp {
                     /* wait for events on epoll_fd */
                     nEvent = epoll_wait(epoll_fd, events.data(), m_max_events_count, -1);
                     if (nEvent == -1)
-                        throw SERVER_EXCEPTION(std::string("epoll_wait(...): ") + std::strerror(errno));
+                        throw SERVER_EXCEPTION2(std::string("epoll_wait(...): "), std::strerror(errno));
 
                     for (int i = 0; i < nEvent; ++i) {
                         auto uint_i = unsigned (i);
