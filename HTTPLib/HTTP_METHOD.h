@@ -32,7 +32,7 @@ namespace cpphttp {
             if (str == HTTP_METHOD_STR[i])
                 return HTTP_METHOD (i);
 
-        return HTTP_METHOD (-1);
+        throw std::runtime_error("http method not found");
     }
 
     static const char *getHTTPMethodStr(HTTP_METHOD method) {

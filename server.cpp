@@ -25,6 +25,7 @@ int main() {
     // endpoint '/' - return { "hello" : "world" }
     httpHandler.addResource("/", cpphttp::GET, [&](std::shared_ptr<cpphttp::Request> &req, std::shared_ptr<cpphttp::Response> &resp) {
         resp->headers.emplace("Content-Type", "application/json");
+        logger.info(req->body);
         Document d(rapidjson::kObjectType);
         Value v(rapidjson::kStringType);
         v.SetString("world", std::strlen("world"), d.GetAllocator());
@@ -40,23 +41,15 @@ int main() {
         resp->headers.emplace("Content-Type", "application/json");
         Document d(rapidjson::kObjectType);
         auto &allocator = d.GetAllocator();
-        if (req->method == cpphttp::GET) {
-            std::random_device r;
-            std::default_random_engine e1(r());
-            std::uniform_int_distribution<int> uniform_dist(1, 100);
-            auto mean = uniform_dist(e1);
-            buffer.Clear();
-            Writer<StringBuffer> writer(buffer);
-            d.AddMember("num", Value().SetInt(mean), allocator);
-            d.Accept(writer);
-            resp->body = std::string(buffer.GetString());
-        } else {
-            buffer.Clear();
-            Writer<StringBuffer> writer(buffer);
-            d.AddMember("error", "method not implemented", allocator);
-            d.Accept(writer);
-            resp->body.assign(std::string(buffer.GetString()));
-        }
+        std::random_device r;
+        std::default_random_engine e1(r());
+        std::uniform_int_distribution<int> uniform_dist(1, 100);
+        auto mean = uniform_dist(e1);
+        buffer.Clear();
+        Writer<StringBuffer> writer(buffer);
+        d.AddMember("num", Value().SetInt(mean), allocator);
+        d.Accept(writer);
+        resp->body = std::string(buffer.GetString());
     });
 
     // Create server instance

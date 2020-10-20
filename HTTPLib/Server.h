@@ -47,7 +47,7 @@ namespace cpphttp {
         unsigned int m_thread_count{};
         // Server port
         unsigned short m_port{};
-        unsigned int m_backlog{};
+        unsigned int m_backlog = 16386;
         // Threads
         std::vector<thread> m_threads{};
         // Struct or class that handle incoming request
@@ -180,11 +180,12 @@ namespace cpphttp {
                     if (nEvent == -1)
                         throw std::runtime_error("epoll_wait(...): " + std::string(std::strerror(errno)));
 
-                    for (unsigned long i = 0; i < nEvent; ++i) {
-                        if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) {
-                            close(events[i].data.fd);
+                    for (int i = 0; i < nEvent; ++i) {
+                        auto uint_i = unsigned (i);
+                        if ((events.at(uint_i).events & EPOLLERR) || (events.at(uint_i).events & EPOLLHUP)) {
+                            close(events.at(uint_i).data.fd);
                             continue;
-                        } else if (events[i].data.fd == m_listen_fd) {
+                        } else if (events.at(i).data.fd == m_listen_fd) {
                             // On new connection
                             acceptConnection(event, epoll_fd);
                         } else {
@@ -208,9 +209,10 @@ namespace cpphttp {
                         unsigned int thread_count = 32,
                         cpphttp::HTTPHandler<L> httpHandler = {},
                         L &logger = nullptr)
-                : m_port(port), m_backlog(backlog),
-                  m_max_events_count(max_events),
+                : m_max_events_count(max_events),
                   m_thread_count(thread_count),
+                  m_port(port),
+                  m_backlog(backlog),
                   m_http_handler(std::move(httpHandler)),
                   m_logger(logger) {
             init();

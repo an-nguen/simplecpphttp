@@ -77,7 +77,7 @@ namespace cpphttp {
                     }
                     if (cnt > 0) {
                         /* parse/handle acquired data to Response struct instance */
-                        response = handleResponse(raw, request, response,
+                        handleResponse(raw, request, response,
                                                   d, allocator, stringBuffer, writer, v);
                         response->headers.emplace("Server", "cpphttp");
                         response->headers.emplace("Access-Control-Allow-Origin", "*");
@@ -139,7 +139,7 @@ namespace cpphttp {
             response->body = std::string(buffer.GetString());
         }
 
-        std::shared_ptr<Response> &handleResponse(const std::string &raw, std::shared_ptr<Request> &request, std::shared_ptr<Response> &response,
+        void handleResponse(const std::string &raw, std::shared_ptr<Request> &request, std::shared_ptr<Response> &response,
                                                   Document &d, MemoryPoolAllocator<> &allocator,
                                                   StringBuffer &stringBuffer, Writer<StringBuffer> &writer, Value &v ) {
             HTTP_STATUS res = request->parseRequest(raw);
@@ -168,7 +168,6 @@ namespace cpphttp {
             }
 
             response->status_msg = HTTP_PROTOCOL_STR[response->protocol];
-            return response;
         }
 
         ssize_t readConnection(int connectionFd, std::string &raw, ssize_t &cnt) {
