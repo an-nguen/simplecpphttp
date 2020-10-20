@@ -23,7 +23,7 @@ set(SRC_COMMON
         Logger/SimpleLogger.h
         )
 set(SRV_SRC
-        HTTPLib/Server.h )
+        HTTPLib/Server.h HTTPLib/ServerException.h)
 set(CLI_SRC
         HTTPLib/Client.h
         )

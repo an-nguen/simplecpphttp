@@ -12,7 +12,8 @@
 
 #define PRINT_LOG(level, message) auto nowTimePoint = std::chrono::system_clock::now(); \
 auto time = std::chrono::system_clock::to_time_t(nowTimePoint);                               \
-std::cout << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << std::string(4, ' ') << level << "  :  " << msg << std::endl
+std::cout << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << std::string(4, ' ') << "[" << level << "]:  " \
+<< msg << std::endl
 
 void SimpleLogger::info(const std::basic_string<char> msg) {
     PRINT_LOG("\033[1;37mINFO\033[0m", msg);
