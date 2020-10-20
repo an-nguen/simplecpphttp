@@ -11,8 +11,8 @@
 #include "HTTP_PROTOCOL.h"
 
 namespace cpphttp {
-    constexpr const char HTTP_HEADER_BODY_DIVIDER[] = "\r\n\r\n";
-    constexpr const char HTTP_NEW_LINE_CHARACTERS[] = "\r\n";
+    constexpr auto HTTP_HEADER_BODY_DIVIDER = "\r\n\r\n";
+    constexpr auto HTTP_NEW_LINE_CHARACTERS = "\r\n";
 
     struct Request {
         public:
@@ -39,17 +39,17 @@ namespace cpphttp {
                 // 4. Split header string to string vector
                 auto headerVec = HTTPUtils::split(headerStr, HTTP_NEW_LINE_CHARACTERS);
                 // 5. Parse first HTTP header line
-                auto reqLine = HTTPUtils::split(headerVec.at(0), " ");
-                if (reqLine.size() != 3)
+                auto requestLine = HTTPUtils::split(headerVec.at(0), " ");
+                if (requestLine.size() != 3)
                     return BAD_REQUEST;
-                this->method = getHTTPMethod(reqLine.at(0));
+                this->method = getHTTPMethod(requestLine.at(0));
                 if (this->method == NO_METHOD)
                     return METHOD_NOT_ALLOWED;
-                this->path = reqLine.at(1);
-                this->protocol = getHTTPProtocol(reqLine.at(2).c_str());
+                this->path = requestLine.at(1);
+                this->protocol = getHTTPProtocol(requestLine.at(2).c_str());
                 // 6. The remainder of the header write to std::map this->headers
-                for (auto i = headerVec.begin() + 1; i != headerVec.end() - 1; i++) {
-                    auto req_header = HTTPUtils::split(*i, ":");
+                for (auto &i : headerVec) {
+                    auto req_header = HTTPUtils::split(i, ":");
                     if (req_header.size() == 2)
                         headers.emplace(req_header.at(0), req_header.at(1));
                     

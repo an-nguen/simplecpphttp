@@ -25,7 +25,6 @@ int main() {
     // endpoint '/' - return { "hello" : "world" }
     httpHandler.addResource("/", cpphttp::GET, [&](std::shared_ptr<cpphttp::Request> &req, std::shared_ptr<cpphttp::Response> &resp) {
         resp->headers.emplace("Content-Type", "application/json");
-        logger.info(req->body);
         Document d(rapidjson::kObjectType);
         Value v(rapidjson::kStringType);
         v.SetString("world", std::strlen("world"), d.GetAllocator());

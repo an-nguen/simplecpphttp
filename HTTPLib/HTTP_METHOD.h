@@ -23,13 +23,13 @@ namespace cpphttp {
         HTTP_METHODS(GEN_ENUM)
     };
 
-    static const char * HTTP_METHOD_STR[] = {
+    static std::array HTTP_METHOD_STR = {
         HTTP_METHODS(GEN_STR)
     };
 
     static auto getHTTPMethod(std::basic_string<char>& str) {
-        for (unsigned long i = 0; i < (sizeof(HTTP_METHOD_STR) / sizeof(HTTP_METHOD_STR[0])); i++)
-            if (str == HTTP_METHOD_STR[i])
+        for (unsigned long i = 0; i < HTTP_METHOD_STR.size(); i++)
+            if (str == HTTP_METHOD_STR.at(i))
                 return HTTP_METHOD (i);
 
         throw std::runtime_error("http method not found");

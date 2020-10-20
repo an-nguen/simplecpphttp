@@ -133,7 +133,7 @@ namespace cpphttp {
                                      HTTP_STATUS status) {
             response->status = status;
             response->status_msg = HTTP_STATUS_STR.at(status);
-            v.SetString(HTTP_STATUS_STR.at(status), allocator);
+            v.SetString(HTTP_STATUS_STR.at(status).c_str(), allocator);
             d.AddMember("error", v, allocator);
             d.Accept(writer);
             response->body = std::string(buffer.GetString());

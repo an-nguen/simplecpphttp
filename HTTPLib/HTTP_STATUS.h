@@ -78,7 +78,7 @@ namespace cpphttp {
         NETWORK_AUTHENTICATION_REQUIRED,
     } HTTP_STATUS;
 
-    static const std::map <HTTP_STATUS, const char * > HTTP_STATUS_STR = {
+    static const std::map <HTTP_STATUS, std::basic_string<char> > HTTP_STATUS_STR = {
             {CONTINUE, "Continue"},
             {SWITCHING_PROTOCOLS, "Switching Protocols"},
             {PROCESSING, "Processing"},

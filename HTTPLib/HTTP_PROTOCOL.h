@@ -19,7 +19,7 @@ namespace cpphttp {
         HTTP_PROTOCOLS(GEN_ENUM)
     };
 
-    static const char * HTTP_PROTOCOL_STR[] = {
+    static std::array HTTP_PROTOCOL_STR = {
             "NO_PROTOCOL",
             "HTTP/1.0",
             "HTTP/1.1",
@@ -27,8 +27,8 @@ namespace cpphttp {
     };
 
     static HTTP_PROTOCOL_ENUM getHTTPProtocol(const char * str) {
-        for (unsigned i = 0; i < (sizeof(HTTP_PROTOCOL_STR) / sizeof(HTTP_PROTOCOL_STR[0])); i++)
-            if (strstr(str, HTTP_PROTOCOL_STR[i]) != nullptr)
+        for (unsigned i = 0; i < HTTP_PROTOCOL_STR.size(); i++)
+            if (strstr(str, HTTP_PROTOCOL_STR.at(i)) != nullptr)
                 return (HTTP_PROTOCOL_ENUM)i;
 
         throw std::runtime_error("no http protocol");
