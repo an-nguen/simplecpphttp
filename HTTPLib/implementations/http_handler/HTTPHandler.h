@@ -13,11 +13,13 @@
 
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include <exceptions/HTTPHandlerException.h>
 
-#include "HTTPRequest.h"
-#include "HTTPResponse.h"
+#include "domains/HTTPRequest.h"
+#include "domains/HTTPResponse.h"
 #include "HTTPResource.h"
-#include "../Logger/AbstractLogger.h"
+#include "../../../Logger/AbstractLogger.h"
+#include "abstractions/AbstractHandler.h"
 
 namespace cpphttp {
 #define BUF_SZ 32000
@@ -30,7 +32,7 @@ namespace cpphttp {
     using rapidjson::MemoryPoolAllocator;
 
     template <class L> requires logs::DerivedAbstractLogger<L>
-    class HTTPHandler {
+    class HTTPHandler: public AbstractHandler {
     public:
         HTTPHandler() = default;
 
@@ -43,18 +45,18 @@ namespace cpphttp {
             this->m_read_size = rs;
         }
 
-        void handle(int epollFd, struct epoll_event &event, int connFd) {
+        void handle(int epollFd, struct epoll_event &event, int connFd) override {
             bool isDone = false, isShouldClose = false;
             std::string raw{};
             std::shared_ptr<Request> request(new Request());
             std::shared_ptr<Response> response{new Response()};
 
-            rapidjson::Document d(rapidjson::kObjectType);
+            Document d(rapidjson::kObjectType);
             auto &allocator = d.GetAllocator();
-            rapidjson::StringBuffer stringBuffer;
-            rapidjson::Value v;
+            StringBuffer stringBuffer;
             stringBuffer.Clear();
-            rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
+            Writer<StringBuffer> writer(stringBuffer);
+            Value v;
 
             try {
                 while (!isDone) {
@@ -67,19 +69,19 @@ namespace cpphttp {
                             m_logger.error("read: " + std::string(std::strerror(errno)));
                             isShouldClose = true;
                             if (epoll_ctl(epollFd, EPOLL_CTL_DEL, connFd, &event) == -1) {
-                                throw runtime_error("epoll_ctl: " + std::string(std::strerror(errno)));
+                                throw HTTPHandlerException("epoll_ctl: " + std::string(std::strerror(errno)));
                             }
                         }
                         isDone = true;
                     } else if (nBytes == 0) {
                         if (epoll_ctl(epollFd, EPOLL_CTL_DEL, connFd, &event) == -1)
-                            throw runtime_error("epoll_ctl" + std::string(std::strerror(errno)));
+                            throw HTTPHandlerException("epoll_ctl" + std::string(std::strerror(errno)));
                     }
                     if (cnt > 0) {
                         /* parse/handle acquired data to Response struct instance */
                         handleResponse(raw, request, response,
                                                   d, allocator, stringBuffer, writer, v);
-                        response->headers.emplace("Server", "cpphttp");
+                        response->headers.emplace("TCPServer", "cpphttp");
                         response->headers.emplace("Access-Control-Allow-Origin", "*");
                         /* 3. write data to connection file descriptor */
                         nBytes = writeConnection(connFd, response);
@@ -99,7 +101,7 @@ namespace cpphttp {
                 }
             } catch (std::exception &e) {
                 m_logger.error(e.what());
-                response->headers.emplace("Server", "cpphttp");
+                response->headers.emplace("TCPServer", "cpphttp");
                 response->headers.emplace("Access-Control-Allow-Origin", "*");
                 response->protocol = HTTP_1_1;
                 setErrorResponse(d, allocator, stringBuffer, writer, response, v, INTERNAL_SERVER_ERROR);

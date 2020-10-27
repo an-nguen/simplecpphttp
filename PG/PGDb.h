@@ -96,8 +96,7 @@ namespace datasource {
                 sendResult = PQsendQuery(conn, preparedQuery.c_str());
                 Assert(sendResult != 1, "failed to exec statement");
             }
-            PGresult *queryRes;
-            while ( queryRes = PQgetResult(conn) ) {
+            while ( auto * queryRes = PQgetResult(conn) ) {
                 auto nCols = PQnfields(queryRes);
                 auto mRows = PQntuples(queryRes);
 
@@ -121,23 +120,66 @@ namespace datasource {
 
             PQflush(conn);
             this->m_pool->freeConnection(PGconn);
-            this->clear();
+            this->Clear();
 
             return this;
         }
 
         template<class T> requires DerivedDBModel<T>
-        PGDb * first(const string &table, vector<T> &result) {
+        PGDb * First(const string &table, vector<T> &result) {
             this->m_limit = 1;
             return this->Find(table, result);
         }
 
-        PGDb * limit(long long countRows) {
-            this->m_limit = countRows;
+        template<class T> requires DerivedDBModel<T>
+        PGDb * Create(T &object) {
+
+            auto PGconn = this->m_pool->getConnection();
+            auto conn = PGconn->connection().get();
+            std::string preparedQuery = "insert into ";
+            preparedQuery.append(object.getTableName() + " ");
+            std::string columnNames;
+            std::string valuesString;
+            std::vector<std::string> values;
+            size_t i = 0;
+            auto sz =  object.getValues().size();
+            for (auto [key, value]: object.getValues()) {
+                i++;
+                values.push_back(value);
+                if (i != sz) {
+                    columnNames.append(key + ", ");
+                    valuesString.append("$" + std::to_string(i) + ", ");
+                } else {
+                    columnNames.append(key);
+                    valuesString.append("$" + std::to_string(i));
+                }
+            }
+            columnNames = "(" + columnNames + ") ";
+            valuesString = "(" + valuesString + ") ";
+            preparedQuery += columnNames + " values " +
+                    valuesString + "returning " + object.getPrimaryKeyColumnName() + ";";
+
+            char **str_val;
+            str_val = (char **)malloc(values.size() * sizeof(char* ));
+            for (size_t i = 0; i < values.size(); i++) {
+                str_val[i] = (char *)malloc((values.at(i).length() + 1) * sizeof(char *));
+                strcpy(str_val[i], values.at(i).c_str());
+            }
+            auto sendResult = PQsendQueryParams(conn, preparedQuery.c_str(),
+                                           static_cast<int>(this->values.size()),
+                                           nullptr, str_val,
+                                           nullptr, nullptr, 0);
+            // Free allocated array
+            for (size_t i = 0; i < values.size(); i++)
+                free(str_val[i]);
+
+            free(str_val);
+            Assert(sendResult != 1, "failed to exec statement");
+
             return this;
         }
 
-        void clear() {
+        void Clear() {
             this->m_limit = 0;
             m_where_conditions.clear();
             m_query_param_values.clear();

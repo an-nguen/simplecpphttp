@@ -1,8 +1,8 @@
 #include <string>
 #include <random>
 
-#include "HTTPLib/HTTPHandler.h"
-#include "HTTPLib/Server.h"
+#include "implementations/http_handler/HTTPHandler.h"
+#include "HTTPLib/TCPServer.h"
 
 #include "Logger/SimpleLogger.h"
 
@@ -52,9 +52,9 @@ int main() {
     });
 
     // Create server instance
-    cpphttp::Server serverSocket(8080, 16386, 16386, 1, httpHandler, logger);
+    cpphttp::TCPServer server(8080, 16386, 16386, 1, httpHandler, logger);
 
     // Start server
-    serverSocket.listenAndServe();
+    server.listenAndServe();
     return 0;
 }

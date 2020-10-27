@@ -31,7 +31,7 @@ namespace cpphttp {
         RESERVED,
         TEMPORARY_REDIRECT,
         PERMANENT_REDIRECT,
-        // Client error
+        // TCPClient error
         BAD_REQUEST = 400,
         UNAUTHORIZED,
         PAYMENT_REQUIRED,
@@ -63,7 +63,7 @@ namespace cpphttp {
         RETRY_WITH = 449,
         UNAVAILABLE_FOR_LEGAL_REASONS = 451,
         CLIENT_CLOSED_REQUEST = 499,
-        // Server error
+        // TCPServer error
         INTERNAL_SERVER_ERROR = 500,
         NOT_IMPLEMENTED,
         BAD_GATEWAY,
@@ -103,7 +103,7 @@ namespace cpphttp {
             {RESERVED, "Reserved"},
             {TEMPORARY_REDIRECT, "Temporary Redirect"},
             {PERMANENT_REDIRECT, "Permanent Redirect"},
-            // Client error
+            // TCPClient error
             {BAD_REQUEST, "Bad Request"},
             {UNAUTHORIZED, "Unauthorized"},
             {PAYMENT_REQUIRED, "Payment Required"},
@@ -134,9 +134,9 @@ namespace cpphttp {
             {REQUEST_HEADER_FIELDS_TOO_LARGE, "Request Header Fields Too Large"},
             {RETRY_WITH, "Retry With"},
             {UNAVAILABLE_FOR_LEGAL_REASONS, "Unavailable For Legal Reasons"},
-            {CLIENT_CLOSED_REQUEST, "Client Closed Request"},
-            // Server error
-            {INTERNAL_SERVER_ERROR, "Internal Server Error"},
+            {CLIENT_CLOSED_REQUEST, "TCPClient Closed Request"},
+            // TCPServer error
+            {INTERNAL_SERVER_ERROR, "Internal TCPServer Error"},
             {NOT_IMPLEMENTED, "Not Implemented"},
             {BAD_GATEWAY, "Bad Gateway"},
             {SERVICE_UNAVAILABLE, "Service Unavailable"},

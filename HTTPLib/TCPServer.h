@@ -17,8 +17,8 @@
 #include <openssl/err.h>
 #include <list>
 
-#include "HTTPHandler.h"
-#include "ServerException.h"
+#include "implementations/http_handler/HTTPHandler.h"
+#include "exceptions/TCPServerException.h"
 #include "../Logger/AbstractLogger.h"
 
 using std::thread;
@@ -37,8 +37,8 @@ namespace cpphttp {
         }
     };
 
-    template <class L> requires logs::DerivedAbstractLogger<L>
-    class Server {
+    template <class T, class L> requires DerivedAbstractHandler<T> && logs::DerivedAbstractLogger<L>
+    class TCPServer {
     private:
         // Main file descriptor for listen
         int m_listen_fd{};
@@ -46,13 +46,13 @@ namespace cpphttp {
         // Event and thread count that should be defined through class constructor
         int m_max_events_count{};
         unsigned int m_thread_count{};
-        // Server port
+        // TCPServer port
         unsigned short m_port{};
         unsigned int m_backlog = 16386;
         // Threads
         std::vector<thread> m_threads{};
         // Struct or class that handle incoming request
-        cpphttp::HTTPHandler<L> m_http_handler{};
+        T m_http_handler{};
         std::map<int, TCPConnection> connections{};
         // Logger
         L m_logger;
@@ -71,9 +71,9 @@ namespace cpphttp {
             err = getaddrinfo(nullptr, std::to_string(port).c_str(), &hints, &res);
             if (err != 0) {
                 if (err == EAI_SYSTEM)
-                    throw SERVER_EXCEPTION2("getaddrinfo: ", std::string(std::strerror(errno)));
+                    throw TCPSERVER_EXCEPTION2("getaddrinfo: ", std::string(std::strerror(errno)));
                 else
-                    throw SERVER_EXCEPTION2("getaddrinfo: ", std::string(gai_strerror(err)));
+                    throw TCPSERVER_EXCEPTION2("getaddrinfo: ", std::string(gai_strerror(err)));
             }
             for (auto p = res; p != nullptr; p = p->ai_next) {
                 int opt = 1;
@@ -82,15 +82,15 @@ namespace cpphttp {
                  * in namespace (family address) and return file descriptor
                  */
                 if ((this->m_listen_fd = socket(p->ai_family, p->ai_socktype, 0)) < 0)
-                    throw SERVER_EXCEPTION2("socket(..): ", std::string(std::strerror(errno)));
+                    throw TCPSERVER_EXCEPTION2("socket(..): ", std::string(std::strerror(errno)));
 
                 /* Set options to file descriptor socket.  */
                 if (setsockopt(this->m_listen_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0)
-                    throw SERVER_EXCEPTION2("setsockopt(..): ", std::string(std::strerror(errno)));
+                    throw TCPSERVER_EXCEPTION2("setsockopt(..): ", std::string(std::strerror(errno)));
 
                 /* Attach local address to socket file descriptor with address length. */
                 if (bind(this->m_listen_fd, p->ai_addr, p->ai_addrlen) < 0)
-                    throw SERVER_EXCEPTION2("bind(..): ", std::string(std::strerror(errno)));
+                    throw TCPSERVER_EXCEPTION2("bind(..): ", std::string(std::strerror(errno)));
             }
 
             /* Mark a connection-mode socket.
@@ -99,7 +99,7 @@ namespace cpphttp {
              * (listen(2))
              */
             if (listen(this->m_listen_fd, backlog) < 0)
-                throw SERVER_EXCEPTION2("listen(..): ", std::string(std::strerror(errno)));
+                throw TCPSERVER_EXCEPTION2("listen(..): ", std::string(std::strerror(errno)));
 
             freeaddrinfo(res);
         }
@@ -108,12 +108,12 @@ namespace cpphttp {
             // Create file descriptor for epoll instance
             auto epoll_fd = epoll_create1(0);
             if (epoll_fd < 0)
-                throw SERVER_EXCEPTION2("failed to create epoll instance: ", std::string(std::strerror(errno)));
+                throw TCPSERVER_EXCEPTION2("failed to create epoll instance: ", std::string(std::strerror(errno)));
 
             event.events = EPOLLIN;
             event.data.fd = listen_fd;
             if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &event) == -1)
-                throw SERVER_EXCEPTION2("failed change instance (epoll_ctl(..)): ", std::string(std::strerror(errno)));
+                throw TCPSERVER_EXCEPTION2("failed change instance (epoll_ctl(..)): ", std::string(std::strerror(errno)));
 
             return epoll_fd;
         }
@@ -145,12 +145,12 @@ namespace cpphttp {
              */
             connection.setConnection(accept(m_listen_fd, &in_addr, &inLength));
             if (connection.getConnection() < 0) {
-                throw SERVER_EXCEPTION2("accept(..) failed: ", std::string(std::strerror(errno)));
+                throw TCPSERVER_EXCEPTION2("accept(..) failed: ", std::string(std::strerror(errno)));
             } else {
 
                 if (getnameinfo(&in_addr, inLength, hBuf, sizeof hBuf, sBuf, sizeof sBuf,
                                 NI_NUMERICHOST | NI_NUMERICSERV) < 0)
-                    throw SERVER_EXCEPTION2("getnameinfo(..): ", std::string(std::strerror(errno)));
+                    throw TCPSERVER_EXCEPTION2("getnameinfo(..): ", std::string(std::strerror(errno)));
 
                 // Set non blocking
                 setNonBlock(connection.getConnection());
@@ -158,7 +158,7 @@ namespace cpphttp {
                 event.data.fd = connection.getConnection();
 
                 if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connection.getConnection(), &event) < 0)
-                    throw SERVER_EXCEPTION2(std::string("epoll_ctl(..) failed:"), std::strerror(errno));
+                    throw TCPSERVER_EXCEPTION2(std::string("epoll_ctl(..) failed:"), std::strerror(errno));
 
                 if (!this->connections.contains(connection.getConnection()))
                     this->connections.try_emplace(connection.getConnection(), connection);
@@ -173,13 +173,13 @@ namespace cpphttp {
                 // Create epoll instance (file descriptor)
                 auto epoll_fd = createEpollFd(this->m_listen_fd, event);
                 if (epoll_fd < 0 || this->m_listen_fd < 0)
-                    throw SERVER_EXCEPTION("m_epollFd or m_listenFd < 0");
+                    throw TCPSERVER_EXCEPTION("m_epollFd or m_listenFd < 0");
 
                 while (true) {
                     /* wait for events on epoll_fd */
                     nEvent = epoll_wait(epoll_fd, events.data(), m_max_events_count, -1);
                     if (nEvent == -1)
-                        throw SERVER_EXCEPTION2(std::string("epoll_wait(...): "), std::strerror(errno));
+                        throw TCPSERVER_EXCEPTION2(std::string("epoll_wait(...): "), std::strerror(errno));
 
                     for (int i = 0; i < nEvent; ++i) {
                         auto uint_i = unsigned (i);
@@ -202,14 +202,14 @@ namespace cpphttp {
         }
 
     public:
-        Server() = default;
+        TCPServer() = default;
 
-        explicit Server(unsigned short port = 8080,
-                        unsigned int backlog = 1024,
-                        int max_events = 16386,
-                        unsigned int thread_count = 32,
-                        cpphttp::HTTPHandler<L> httpHandler = {},
-                        L &logger = nullptr)
+        explicit TCPServer(unsigned short port = 8080,
+                           unsigned int backlog = 1024,
+                           int max_events = 16386,
+                           unsigned int thread_count = 32,
+                           T httpHandler = {},
+                           L &logger = nullptr)
                 : m_max_events_count(max_events),
                   m_thread_count(thread_count),
                   m_port(port),
@@ -230,14 +230,14 @@ namespace cpphttp {
             this->m_threads.resize(m_thread_count);
         }
 
-        ~Server() = default;
+        ~TCPServer() = default;
 
         void listenAndServe() {
             std::stringstream s;
             s << "Ready to listen on port " << m_port << ".\n";
             m_logger.info(s.str().c_str());
             for (auto &thr: this->m_threads) {
-                thr = thread(&Server::eventLoop, this);
+                thr = thread(&TCPServer::eventLoop, this);
                 thr.join();
             }
         }

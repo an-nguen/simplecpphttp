@@ -8,8 +8,8 @@
 #include <functional>
 #include <array>
 
-#include "HTTPRequest.h"
-#include "HTTPResponse.h"
+#include "domains/HTTPRequest.h"
+#include "domains/HTTPResponse.h"
 
 namespace cpphttp {
     struct Resource {

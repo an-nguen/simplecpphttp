@@ -3,12 +3,13 @@
 
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <map>
 #include <utility>
-#include "HTTPUtils.h"
-#include "HTTP_STATUS.h"
-#include "HTTP_METHOD.h"
-#include "HTTP_PROTOCOL.h"
+#include "../enums/HTTP_STATUS.h"
+#include "../enums/HTTP_METHOD.h"
+#include "../enums/HTTP_PROTOCOL.h"
+#include "../utils/HTTPUtils.h"
 
 namespace cpphttp {
     constexpr auto HTTP_HEADER_BODY_DIVIDER = "\r\n\r\n";
@@ -66,8 +67,19 @@ namespace cpphttp {
             return this->body;
         }
 
+        std::string toString() {
+            std::stringstream ss;
+            ss << HTTP_METHOD_STR.at(method) << " " << path << " " << HTTP_PROTOCOL_STR.at(protocol) << std::endl;
+            for (const auto& [first, second]: headers) {
+                ss << first << ": " << second << std::endl;
+            }
+            ss << std::endl << std::endl;
+            ss << body << std::endl;
+            return ss.str();
+        }
+
         friend std::ostream& operator<<(std::ostream &out, const Request &request) {
-            out << HTTP_METHOD_STR[request.method] << " " <<
+            out << HTTP_METHOD_STR.at(request.method) << " " <<
                 request.path << " " << request.protocol << " " << std::endl;
             for (const auto& [first, second] : request.headers) {
                 out << first << ": " << second << std::endl;

@@ -6,7 +6,7 @@
 #define CPPHTTP_HTTP_PROTOCOL_H
 
 #include <cstring>
-#include "HTTP_MACRO.h"
+#include "../macro/HTTP_MACRO.h"
 
 namespace cpphttp {
 #define HTTP_PROTOCOLS(FUNC) \
@@ -26,9 +26,9 @@ namespace cpphttp {
             "HTTP/2",
     };
 
-    static HTTP_PROTOCOL_ENUM getHTTPProtocol(const char * str) {
+    static HTTP_PROTOCOL_ENUM getHTTPProtocol(std::basic_string<char> str) {
         for (unsigned i = 0; i < HTTP_PROTOCOL_STR.size(); i++)
-            if (strstr(str, HTTP_PROTOCOL_STR.at(i)) != nullptr)
+            if (str == HTTP_PROTOCOL_STR.at(i))
                 return (HTTP_PROTOCOL_ENUM)i;
 
         throw std::runtime_error("no http protocol");
