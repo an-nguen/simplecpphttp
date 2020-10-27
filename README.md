@@ -5,6 +5,7 @@ Simple HTTP server implementation using linux epoll, sockets, STL library.
 - Create logger and HTTP Handler
 
 
+```
     #include "Logger/SimpleLogger.h"
     #include "implementations/http_handler/HTTPHandler.h"
     
@@ -15,9 +16,11 @@ Simple HTTP server implementation using linux epoll, sockets, STL library.
                                      , logger); // logger
     ...
     
+```
 - Add endpoint to handler
     
     
+```
     // endpoint '/' - return { "hello" : "world" }
     httpHandler.addResource("/", cpphttp::GET, [&](std::shared_ptr<cpphttp::Request> &req, std::shared_ptr<cpphttp::Response> &resp) {
         resp->headers.emplace("Content-Type", "application/json");
@@ -31,43 +34,51 @@ Simple HTTP server implementation using linux epoll, sockets, STL library.
         resp->body = std::string(buffer.GetString());
     });
     
+```
 
 - Create TCPServer
    
    
+```
     ...
     // Create server instance
     cpphttp::TCPServer server(8080, 16386, 16386, 1, httpHandler, logger);
     ...
-    
+```
     
 - Run TCPServer method listenAndServe()
 
 
+```
     ...
     // Start server
     server.listenAndServe();
     ...
-    
+```
+
 ### HTTP Client
 - Create TCPClient
 
     
+```
     #include "HTTPLib/TCPClient.h"
     
     ...
     TCPClient client;
     
+```
     
 - Send HTTP request and get cpphttp::Response
 
     
+```
     ...
     auto res = client.send(HTTP_METHOD::GET, "wirelesstag.net", 80, "");
     // Output response
     std::cout << res->toString() << std::endl;
     ...
     
+```
 
 ## System requirements
  - rapidjson library
