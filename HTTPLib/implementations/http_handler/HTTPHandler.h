@@ -17,12 +17,11 @@
 
 #include "domains/HTTPRequest.h"
 #include "domains/HTTPResponse.h"
-#include "HTTPResource.h"
+#include "domains/HTTPResource.h"
 #include "../../../Logger/AbstractLogger.h"
 #include "abstractions/AbstractHandler.h"
 
 namespace cpphttp {
-#define BUF_SZ 32000
     using std::runtime_error;
     using rapidjson::Document;
     using rapidjson::kObjectType;
@@ -81,7 +80,7 @@ namespace cpphttp {
                         /* parse/handle acquired data to Response struct instance */
                         handleResponse(raw, request, response,
                                                   d, allocator, stringBuffer, writer, v);
-                        response->headers.emplace("TCPServer", "cpphttp");
+                        response->headers.emplace("Server", "cpphttp");
                         response->headers.emplace("Access-Control-Allow-Origin", "*");
                         /* 3. write data to connection file descriptor */
                         nBytes = writeConnection(connFd, response);
@@ -101,7 +100,7 @@ namespace cpphttp {
                 }
             } catch (std::exception &e) {
                 m_logger.error(e.what());
-                response->headers.emplace("TCPServer", "cpphttp");
+                response->headers.emplace("Server", "cpphttp");
                 response->headers.emplace("Access-Control-Allow-Origin", "*");
                 response->protocol = HTTP_1_1;
                 setErrorResponse(d, allocator, stringBuffer, writer, response, v, INTERNAL_SERVER_ERROR);
@@ -125,6 +124,7 @@ namespace cpphttp {
         std::map<std::string, Resource> m_resources{};
         unsigned int m_read_size{};
         L m_logger{};
+        static constexpr auto BUF_SZ = 64000;
 
         static void setErrorResponse(rapidjson::Document &d,
                                      rapidjson::MemoryPoolAllocator<> &allocator,

@@ -3,13 +3,13 @@ project(CPPHTTP)
 SET(CMAKE_CXX_STANDARD 20)
 
 set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -Wextra -Wconversion")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS} -DCMAKE_EXPORT_COMPILE_COMMANDS=On" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
 
 set(SRC_COMMON
         HTTPLib/abstractions/AbstractHandler.h
         HTTPLib/domains/HTTPResponse.h
         HTTPLib/domains/HTTPRequest.h
-        HTTPLib/implementations/http_handler/HTTPResource.h
+        HTTPLib/domains/HTTPResource.h
         HTTPLib/macro/HTTP_MACRO.h
         HTTPLib/enums/HTTP_METHOD.h
         HTTPLib/enums/HTTP_STATUS.h
