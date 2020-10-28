@@ -57,56 +57,53 @@ namespace cpphttp {
             Writer<StringBuffer> writer(stringBuffer);
             Value v;
 
-            try {
-                while (!isDone) {
-                    ssize_t cnt = 0;
+            while (!isDone) {
+                ssize_t cnt = 0;
 
+                try {
                     /* 1. read data from connection file descriptor to raw */
                     auto nBytes = readConnection(connFd, raw, cnt);
                     if (nBytes == -1) {
                         if (!(errno == EAGAIN || errno == EWOULDBLOCK)) {
-                            m_logger.error("read: " + std::string(std::strerror(errno)));
+                            m_logger.error(fmt::format("read: {}", std::strerror(errno)));
                             isShouldClose = true;
-                            if (epoll_ctl(epollFd, EPOLL_CTL_DEL, connFd, &event) == -1) {
-                                throw HTTPHandlerException("epoll_ctl: " + std::string(std::strerror(errno)));
+                            if (epoll_ctl(epollFd, EPOLL_CTL_DEL, connFd, &event) != 0) {
+                                throw HTTPHandlerException("epoll_ctl(..): ", std::strerror(errno));
                             }
                         }
                         isDone = true;
                     } else if (nBytes == 0) {
-                        if (epoll_ctl(epollFd, EPOLL_CTL_DEL, connFd, &event) == -1)
-                            throw HTTPHandlerException("epoll_ctl" + std::string(std::strerror(errno)));
+                        if (epoll_ctl(epollFd, EPOLL_CTL_DEL, connFd, &event) != 0)
+                            throw HTTPHandlerException("epoll_ctl(..): ", std::string(std::strerror(errno)));
                     }
                     if (cnt > 0) {
                         /* parse/handle acquired data to Response struct instance */
                         handleResponse(raw, request, response,
-                                                  d, allocator, stringBuffer, writer, v);
+                                       d, allocator, stringBuffer, writer, v);
                         response->headers.emplace("Server", "cpphttp");
                         response->headers.emplace("Access-Control-Allow-Origin", "*");
+                        if (!response->headers.contains("Content-Type"))
+                            response->headers.emplace("Content-Type", "application/json");
+                        response->headers.emplace("Content-Length", std::to_string(response->body.size() + 1));
+                        response->headers.emplace("Connection", "close");
                         /* 3. write data to connection file descriptor */
                         nBytes = writeConnection(connFd, response);
                         if (nBytes == 0 || nBytes == -1) {
                             m_logger.error("failed to write msg");
                             isDone = true;
                         }
-                        if (!response->headers.contains("Content-Type"))
-                            response->headers.emplace("Content-Type", "application/json");
-                        response->headers.emplace("Connection", "close");
-
                         isShouldClose = true;
                     }
+                } catch (HTTPHandlerException &e) {
+                    m_logger.error(e.what());
+                    break;
                 }
-                if (isShouldClose) {
-                    close(connFd);
-                }
-            } catch (std::exception &e) {
-                m_logger.error(e.what());
-                response->headers.emplace("Server", "cpphttp");
-                response->headers.emplace("Access-Control-Allow-Origin", "*");
-                response->protocol = HTTP_1_1;
-                setErrorResponse(d, allocator, stringBuffer, writer, response, v, INTERNAL_SERVER_ERROR);
-                response->headers.emplace("Content-Type", "application/json");
-                response->headers.emplace("Connection", "close");
+
             }
+            if (isShouldClose) {
+                close(connFd);
+            }
+
         }
 
 
@@ -142,8 +139,8 @@ namespace cpphttp {
         }
 
         void handleResponse(const std::string &raw, std::shared_ptr<Request> &request, std::shared_ptr<Response> &response,
-                                                  Document &d, MemoryPoolAllocator<> &allocator,
-                                                  StringBuffer &stringBuffer, Writer<StringBuffer> &writer, Value &v ) {
+                            Document &d, MemoryPoolAllocator<> &allocator,
+                            StringBuffer &stringBuffer, Writer<StringBuffer> &writer, Value &v ) {
             HTTP_STATUS res = request->parseRequest(raw);
 
             response->protocol = HTTP_1_1;
@@ -157,8 +154,8 @@ namespace cpphttp {
                 response->status = OK;
                 response->status_msg = HTTP_STATUS_STR.at(OK);
 
-                m_resources[request->path].call(request->method, request, response);
-                m_logger.info(std::string(getHTTPMethodStr(request->method)) + "  ->  [\"" + request->path + "\"]");
+                m_resources.at(request->path).call(request->method, request, response);
+                m_logger.info(fmt::format("{} -> \"{}\" ", getHTTPMethodStr(request->method), request->path));
 
                 for (auto &handler: m_queue_handlers_after) {
                     try {

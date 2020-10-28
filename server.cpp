@@ -52,7 +52,7 @@ int main() {
     });
 
     // Create server instance
-    cpphttp::TCPServer server(8080, 16386, 16386, 1, httpHandler, logger);
+    cpphttp::TCPServer server(8080, 16386, 16386, 6, httpHandler, logger);
 
     // Start server
     server.listenAndServe();

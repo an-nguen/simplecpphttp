@@ -26,7 +26,7 @@ set(SRC_COMMON
         Logger/SimpleLogger.h
         )
 set(SRV_SRC
-        HTTPLib/TCPServer.h)
+        HTTPLib/TCPServer.h HTTPLib/concepts/http_concepts.h)
 set(CLI_SRC
         HTTPLib/TCPClient.h
         )
@@ -34,6 +34,7 @@ set(CLI_SRC
 find_package (Threads       REQUIRED)
 find_package (PostgreSQL    REQUIRED)
 find_package (RapidJSON     REQUIRED)
+find_package (fmt           REQUIRED)
 
 add_executable(CPPHTTP server.cpp ${SRV_SRC} ${SRC_COMMON})
 add_executable(CPPHTTP_Client client.cpp ${CLI_SRC} ${SRC_COMMON})
@@ -47,9 +48,13 @@ ADD_CUSTOM_TARGET(
         COMMENT "Copying Files for target: CPPHTTP" VERBATIM
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/HTTPLib)
-target_include_directories(${PROJECT_NAME} PRIVATE ${PostgreSQL_INCLUDE_DIRS})
-target_include_directories(${PROJECT_NAME} PRIVATE ${RapidJSON_INCLUDE_DIRS})
+target_link_libraries (${PROJECT_NAME} fmt::fmt)
+target_link_libraries (CPPHTTP_Client fmt::fmt)
 target_link_libraries (${PROJECT_NAME} Threads::Threads)
 target_link_libraries (${PROJECT_NAME} ${RapidJSON_LIBRARIES})
 target_link_libraries (${PROJECT_NAME} ${PostgreSQL_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PRIVATE fmt::fmt)
+target_include_directories(CPPHTTP_Client PRIVATE fmt::fmt)
+target_include_directories(${PROJECT_NAME} PRIVATE ${PostgreSQL_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${RapidJSON_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/HTTPLib)

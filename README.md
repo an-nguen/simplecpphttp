@@ -82,5 +82,6 @@ Simple HTTP server implementation using linux epoll, sockets, STL library.
 
 ## System requirements
  - rapidjson library
+ - fmt library
  - libpq library (optional - using ${ROOT}/PG headers)
  

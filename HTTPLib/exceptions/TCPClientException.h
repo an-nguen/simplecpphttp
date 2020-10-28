@@ -5,21 +5,21 @@
 #ifndef CPPHTTP_TCPCLIENTEXCEPTION_H
 #define CPPHTTP_TCPCLIENTEXCEPTION_H
 
-#include "TCPServerException.h"
-#include <vector>
+#include <fmt/core.h>
+#include "../macro/HTTP_MACRO.h"
+#include "../concepts/http_concepts.h"
 
 namespace cpphttp {
     class TCPClientException: public std::exception {
     public:
         explicit TCPClientException(const std::basic_string<char>& message) {
-            m_message = "\n\033[1;31mServerException:\n\t";
-            m_message.append(message);
-            m_message.append("\n\033[0m");
+            m_message = fmt::format("\n\033[1;31mTCPClientException:\n\t {}:{} - {} \n\033[0m", __FILE__, __LINE__, message);
         }
 
         template<SameString ...T>
         explicit TCPClientException(T... args) {
-            m_message = "\n\033[1;31mServerException:\n\t";
+            m_message = fmt::format("\n\033[1;31mTCPClientException:\n\t {}:{} - ", __FILE__, __LINE__);
+
             std::vector<std::basic_string<char>> values = {args...};
             for (auto &arg: values)
                 m_message.append(arg);

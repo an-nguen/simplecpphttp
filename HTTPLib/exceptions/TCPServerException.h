@@ -9,27 +9,19 @@
 #include <string>
 #include <utility>
 
+#include "../macro/HTTP_MACRO.h"
+
 namespace cpphttp {
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-#define TCPSERVER_EXCEPTION(msg) TCPServerException(std::string(__FILE__) + ":" + TOSTRING(__LINE__) + " - " + msg)
-#define TCPSERVER_EXCEPTION2(...) TCPServerException(std::string(__FILE__) + ":" + TOSTRING(__LINE__) + " - ", ##__VA_ARGS__)
-
-    template <class T>
-    concept SameString = std::is_same<T, std::basic_string<char>>::value ||
-    std::is_same<T, const char *>::value || std::is_same<T, char *>::value;
-
     class TCPServerException: public std::exception {
     public:
         explicit TCPServerException(const std::basic_string<char>& message) {
-            m_message = "\n\033[1;31mServerException:\n\t";
-            m_message.append(message);
-            m_message.append("\n\033[0m");
+            m_message = fmt::format("\n\033[1;31mTCPServerException:\n\t {}:{} - {} \n\033[0m", __FILE__, __LINE__, message);
         }
 
         template<SameString ...T>
         explicit TCPServerException(T... args) {
-            m_message = "\n\033[1;31mServerException:\n\t";
+            m_message = fmt::format("\n\033[1;31mTCPServerException:\n\t {}:{} - ", __FILE__, __LINE__);
+
             std::vector<std::basic_string<char>> values = {args...};
             for (auto &arg: values)
                 m_message.append(arg);

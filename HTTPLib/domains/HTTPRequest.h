@@ -12,8 +12,6 @@
 #include "../utils/HTTPUtils.h"
 
 namespace cpphttp {
-    constexpr auto HTTP_HEADER_BODY_DIVIDER = "\r\n\r\n";
-    constexpr auto HTTP_NEW_LINE_CHARACTERS = "\r\n";
 
     struct Request {
         public:
